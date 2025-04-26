@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "../Style/hocvien.css";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 function Home() {
   const [courses, setCourses] = useState([]);
@@ -38,7 +39,9 @@ function Home() {
 
         const data = await response.json();
         if (data.body.errorStatus === 901) {
-          setCourses(data.body.data);
+          const originalData = data.body.data || [];
+          const dataWithImages = await fetchAllImages(originalData);
+          setCourses(dataWithImages);
         } else {
           console.error("Lỗi từ API:", data.body.message);
         }
@@ -60,6 +63,43 @@ function Home() {
     }, 3000);
     return () => clearInterval(interval);
   }, [bannerImages.length]);
+
+  const fetchImage = async (imagename) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `http://localhost:8081/v1/api/registrations/uploads/${imagename}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          responseType: "blob",
+        }
+      );
+      const url = URL.createObjectURL(response.data);
+      return url;
+    } catch (err) {
+      return null;
+    }
+  };
+
+  const fetchAllImages = async (dataArray) => {
+    try {
+      const imagePromises = dataArray.map(async (item) => {
+        if (!item.backgroundImg) return item;
+
+        const imageUrl = await fetchImage(item.backgroundImg.split("/").pop());
+        return {
+          ...item,
+          backgroundImg: imageUrl || item.backgroundImg,
+        };
+      });
+      const results = await Promise.all(imagePromises);
+      return results;
+    } catch (error) {
+      return dataArray;
+    }
+  };
 
   const totalPages = Math.ceil(courses.length / coursesPerPage);
   const currentCourses = courses.slice(
@@ -127,7 +167,7 @@ function Home() {
             >
               <div className="homestudents-course-card">
                 <img
-                  src={course.image}
+                  src={course.backgroundImg}
                   alt={course.title}
                   className="homestudents-course-image"
                 />

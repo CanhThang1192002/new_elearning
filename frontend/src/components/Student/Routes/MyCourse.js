@@ -168,7 +168,9 @@ const MyCourse = () => {
         }
       );
       if (response?.data?.body?.errorStatus === 901) {
-        setRegisteredCourses(response?.data?.body?.data);
+        const originalData = response?.data?.body?.data || [];
+        const dataWithImages = await fetchAllImages(originalData);
+        setRegisteredCourses(dataWithImages);
       } else {
         toast.error(
           response?.data?.body?.message || "Có lỗi khi lấy danh sách giảng viên"
@@ -195,6 +197,43 @@ const MyCourse = () => {
     fetchCoursesFromApi();
     getCourseRegistered();
   }, []);
+
+  const fetchImage = async (imagename) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `http://localhost:8081/v1/api/registrations/uploads/${imagename}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          responseType: "blob",
+        }
+      );
+      const url = URL.createObjectURL(response.data);
+      return url;
+    } catch (err) {
+      return null;
+    }
+  };
+
+  const fetchAllImages = async (dataArray) => {
+    try {
+      const imagePromises = dataArray.map(async (item) => {
+        if (!item.backgroundImg) return item;
+
+        const imageUrl = await fetchImage(item.backgroundImg.split("/").pop());
+        return {
+          ...item,
+          backgroundImg: imageUrl || item.backgroundImg,
+        };
+      });
+      const results = await Promise.all(imagePromises);
+      return results;
+    } catch (error) {
+      return dataArray;
+    }
+  };
 
   const coursesPerPage = 4;
 
@@ -248,7 +287,7 @@ const MyCourse = () => {
                 className="mycourse-course-card"
               >
                 <img
-                  src={course?.image}
+                  src={course?.backgroundImg}
                   alt={course?.courseName}
                   className="mycourse-course-image"
                 />

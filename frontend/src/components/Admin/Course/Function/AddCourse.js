@@ -43,7 +43,9 @@ const AddCourse = ({ isAdmin }) => {
 
   useEffect(() => {
     if (isSaved && showSuccessModal) {
-      navigate("/course-management", { state: { newCourseAdded: true } });
+      if (isAdmin)
+        navigate("/course-management", { state: { newCourseAdded: true } });
+      else navigate("/courses");
     }
   }, [isSaved, showSuccessModal, navigate]);
 
@@ -85,12 +87,6 @@ const AddCourse = ({ isAdmin }) => {
       newErrors.lectures = "Phải có ít nhất một bài giảng";
     } else {
       lectures.forEach((lecture, index) => {
-        // if (!lecture.order)
-        //   newErrors[`lectureOrder${index}`] =
-        //     "Thứ tự bài giảng không được để trống";
-        // else if (isNaN(lecture.order) || Number(lecture.order) <= 0)
-        //   newErrors[`lectureOrder${index}`] = "Thứ tự phải là số dương";
-
         if (!lecture.name.trim())
           newErrors[`lectureName${index}`] =
             "Tên bài giảng không được để trống";
@@ -119,30 +115,30 @@ const AddCourse = ({ isAdmin }) => {
   };
 
   const handleUploadImage = async () => {
-    // const formData = new FormData();
-    // formData.append("file", file);
-    // const token = localStorage.getItem("token");
-    // try {
-    //   const response = await axios.post(
-    //     "http://localhost:8081/v1/api/registrations/upload",
-    //     formData,
-    //     {
-    //       headers: {
-    //         "Content-Type": "multipart/form-data",
-    //         Authorization: `Bearer ${token}`,
-    //       },
-    //     }
-    //   );
-    //   if (response.data.success) {
-    //     return response.data.data;
-    //   } else {
-    //     toast.error("Có lỗi khi upload ảnh");
-    //     return null;
-    //   }
-    // } catch (error) {
-    //   toast.error("Có lỗi khi upload ảnh");
-    //   return null;
-    // }
+    const formData = new FormData();
+    formData.append("file", file);
+    const token = localStorage.getItem("token");
+    try {
+      const response = await axios.post(
+        "http://localhost:8081/v1/api/registrations/upload",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.data.success) {
+        return response.data.data;
+      } else {
+        toast.error("Có lỗi khi upload ảnh");
+        return null;
+      }
+    } catch (error) {
+      toast.error("Có lỗi khi upload ảnh");
+      return null;
+    }
   };
 
   const handleAddObjective = () => setObjectives([...objectives, ""]);
@@ -220,17 +216,6 @@ const AddCourse = ({ isAdmin }) => {
     setStudents(selected);
   };
 
-  // const instructors = [
-  //   {
-  //     id: 1,
-  //     code: "US0001",
-  //     name: "Nguyễn Văn A",
-  //     email: "nva@gmail.com",
-  //     phone: "0123456789",
-  //     dob: "01/01/1990",
-  //     experience: 2,
-  //   },
-  // ];
   const [instructors, setInstructors] = useState([]);
 
   const getAllTeacher = async () => {
@@ -336,13 +321,12 @@ const AddCourse = ({ isAdmin }) => {
 
     if (Object.keys(newErrors).length === 0) {
       try {
-        // const pathImage = await handleUploadImage();
-        // const pathImage = await uploadToCloudinary(file);
+        const pathImage = await handleUploadImage();
         const newCourse = {
           courseName: formData.courseName,
           description: formData.description,
           learningOutcome: objectives.join(", "),
-          backgroundImg: "",
+          backgroundImg: pathImage,
           startDate: formData.startDate,
           endDate: formData.endDate,
           lessonCount: lectures?.length || 0,
@@ -652,7 +636,6 @@ const AddCourse = ({ isAdmin }) => {
             onChange={handleCoverImageChange}
           />
         </div>
-
         {errors.coverImage && (
           <span className="error">{errors.coverImage}</span>
         )}

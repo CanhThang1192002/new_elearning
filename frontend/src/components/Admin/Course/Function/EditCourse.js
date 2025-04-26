@@ -107,6 +107,25 @@ const EditCourse = ({ isAdmin }) => {
     fetchCourseData();
   }, []);
 
+  const fetchImage = async (imagename) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `http://localhost:8081/v1/api/registrations/uploads/${imagename}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          responseType: "blob",
+        }
+      );
+      const url = URL.createObjectURL(response.data);
+      return url;
+    } catch (err) {
+      return null;
+    }
+  };
+
   const fetchCourseData = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -130,11 +149,15 @@ const EditCourse = ({ isAdmin }) => {
         const litCourse = { ...response?.data?.body?.data, lesson: listLesson };
         setDataCourse(litCourse);
         setTeacher(litCourse?.instructors[0]);
-        const parts = litCourse?.backgroundImg.split("/");
-        const uploadsIndex = parts.lastIndexOf("uploads");
-        const desiredPath = "/" + parts.slice(uploadsIndex).join("/");
-        console.log("ảnh", `http://localhost:8081${desiredPath}`);
-        setCoverImage(`http://localhost:8081`);
+        // const parts = litCourse?.backgroundImg.split("/");
+        // const uploadsIndex = parts.lastIndexOf("uploads");
+        // const desiredPath = "/" + parts.slice(uploadsIndex).join("/");
+        // console.log("ảnh", `http://localhost:8081${desiredPath}`);
+        // setCoverImage(`http://localhost:8081`);
+        const parts = await fetchImage(
+          litCourse?.backgroundImg.split("/").pop()
+        );
+        setCoverImage(parts);
       } else {
         toast.error(response?.data?.body?.message || "Lỗi không xác định");
       }
@@ -723,7 +746,6 @@ const EditCourse = ({ isAdmin }) => {
               onChange={handleCoverImageChange}
             />
           </div>
-          <img src="http://localhost:8081/v1/api/registrations/uploads/signal_light.png" />
           {errors.coverImage && (
             <span className="error">{errors.coverImage}</span>
           )}

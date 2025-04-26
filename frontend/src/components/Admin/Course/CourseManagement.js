@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Modala from "./Function/Modala";
 import "../Style/adcm.css";
+import axios from "axios";
 
 const CourseManagement = () => {
   const [courses, setCourses] = useState([]);

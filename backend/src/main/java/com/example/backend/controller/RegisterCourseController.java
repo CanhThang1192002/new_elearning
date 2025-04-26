@@ -154,15 +154,13 @@ public class RegisterCourseController {
                 Files.createDirectories(uploadPath);
             }
 
-            // Tạo tên file mới nếu bị trùng
             String fileName = generateUniqueFileName(uploadPath, file.getOriginalFilename());
             Path filePath = uploadPath.resolve(fileName);
             Files.copy(file.getInputStream(), filePath);
 
-            String fileUrl = UPLOAD_DIR + fileName;
             return ResponseEntity.ok().body(Map.of(
                     "success", true,
-                    "data", fileUrl,
+                    "data", fileName,
                     "message", "Upload thành công"
             ));
 

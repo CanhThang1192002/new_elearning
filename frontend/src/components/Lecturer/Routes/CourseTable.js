@@ -68,6 +68,7 @@ const CourseTable = () => {
   };
 
   const handleEditCourse = (course) => {
+    localStorage.setItem("courseid", course.id);
     navigate(`/edit-course/${course.id}`, { state: { course } });
   };
 
