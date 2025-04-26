@@ -29,4 +29,6 @@ public interface CourseRepositoryCustom {
      * @param courseCode Mã khóa học.
      */
     void removeInstructorsFromCourse(String courseCode);
+
+    void updateInstructorToCourse(String userCode, Long courseID);
 }

@@ -91,6 +91,7 @@ public class AuthController {
                 successResp.put("token", resp.getToken());
                 successResp.put("errorStatus", 900);
                 successResp.put("message", "Đăng nhập thành công");
+                successResp.put("id", resp.getData() != null ? ((UserResp) resp.getData()).getId(): null);
                 successResp.put("role", resp.getData() != null ? ((UserResp) resp.getData()).getRole() : null);
                 return ResponseEntity.ok(successResp);
             } else {

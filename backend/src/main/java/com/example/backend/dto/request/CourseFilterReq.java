@@ -13,6 +13,8 @@ import java.time.LocalDate;
 public class CourseFilterReq {
     private String courseName;
     private String instructorName;
+    private String instructorId;
+    private Long studentId;
     private String statusCode;
     private String createdBy;
     private LocalDate createdDate;

@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface UserService {
@@ -98,4 +99,6 @@ public interface UserService {
          * @return Đối tượng User đã được tạo và lưu vào cơ sở dữ liệu.
          */
         User createUser(UserRegisterReq req, String encryptedPassword, String publicKeyString);
+
+        List<UserResp> getUsersByRole(Integer roleId);
 }

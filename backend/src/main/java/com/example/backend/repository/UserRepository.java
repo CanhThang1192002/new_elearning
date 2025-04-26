@@ -103,7 +103,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
                         @Param("statusCode") String statusCode,
                         Pageable pageable);
 
-        List<User> findByRoleId(int roleId);
+        List<User> findByRoleId(Integer roleId);
 
         @Query("SELECT u FROM User u WHERE u.roleId = :roleId")
         List<User> findByRole(@Param("roleId") int roleId);

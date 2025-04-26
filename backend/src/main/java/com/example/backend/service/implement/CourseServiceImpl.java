@@ -25,6 +25,8 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -103,6 +105,10 @@ public class CourseServiceImpl implements CourseService {
                 }
 
                 Long courseId = courseRepository.findCourseIdByCourseCode(courseResp.getCourseCode());
+//                Long courseId = Optional.ofNullable(req.getInstructorIds())
+//                        .filter(list -> !list.isEmpty())
+//                        .map(list -> list.get(0))
+//                        .orElse(null);
                 List<InstructorResp> instructorResps = courseRepository.findInstructorsByCourseId(courseId);
                 List<LessonResp> lessonResps = courseRepository.findDetailedLessonsByCourseId(courseId);
 
@@ -121,29 +127,42 @@ public class CourseServiceImpl implements CourseService {
          */
         @Override
         public Page<CourseResp> filterCourses(CourseFilterReq req) {
-                Pageable pageable = PageRequest.of(req.getPageNumber(), req.getPageSize());
-                String currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
-
-                User user = userRepository.findByUserCode(currentUser)
-                                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
-
-                String createdBy;
-                if (user.getRoleId() == Role.INSTRUCTOR.getValue()) {
-
-                        createdBy = currentUser;
+//                Pageable pageable = PageRequest.of(req.getPageNumber(), req.getPageSize());
+                Pageable pageable;
+                if (req.getPageNumber() == 0 || req.getPageSize() == 0) {
+                        pageable = Pageable.unpaged();
                 } else {
+                        pageable = PageRequest.of(req.getPageNumber(), req.getPageSize());
+                }
+//                String currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
+//
+//                User user = userRepository.findByUserCode(currentUser)
+//                                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+//
+//                String createdBy;
+//                if (user.getRoleId() == Role.INSTRUCTOR.getValue()) {
+//
+//                        createdBy = currentUser;
+//                } else {
+//
+//                        createdBy = (req.getCreatedBy() != null && !req.getCreatedBy().isBlank()) ? req.getCreatedBy()
+//                                        : null;
+//                }
+                Long instructorId = null;
 
-                        createdBy = (req.getCreatedBy() != null && !req.getCreatedBy().isBlank()) ? req.getCreatedBy()
-                                        : null;
+                if (req.getInstructorId() != null) {
+                        User user = userRepository.findById(Long.parseLong(req.getInstructorId()))
+                                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
+                        instructorId = user.getId();
                 }
 
                 Page<Course> page = courseRepository.searchCoursesPaging(
-                                req.getCourseName(),
-                                req.getInstructorName(),
-                                req.getCreatedDate(),
-                                req.getStatusCode(),
-                                createdBy,
-                                pageable);
+                        req.getCourseName(),
+                        req.getInstructorName(),
+                        req.getCreatedDate(),
+                        req.getStatusCode(),
+                        instructorId,
+                        pageable);
 
                 return page.map(course -> {
                         CourseResp resp = new CourseResp(
@@ -244,5 +263,6 @@ public class CourseServiceImpl implements CourseService {
                                 courseResp.getBackgroundImg(), courseResp.getStartDate(), courseResp.getEndDate(),
                                 courseResp.getLessonCount(), courseResp.getStatusCode(), instructorList, lessonList);
         }
+
 
 }

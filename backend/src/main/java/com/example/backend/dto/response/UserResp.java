@@ -11,6 +11,7 @@ import lombok.Setter;
 @Builder
 public class UserResp {
 
+    private Long id;
     private String userCode;
     private String name;
     private String email;
@@ -31,6 +32,7 @@ public class UserResp {
      */
     public static UserResp fromUser(User user) {
         return UserResp.builder()
+                .id(user.getId())
                 .userCode(user.getUserCode())
                 .name(user.getName())
                 .email(user.getEmail())

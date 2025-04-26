@@ -69,4 +69,5 @@ public interface CourseService {
      */
     CourseDetailResp updateCourse(UpdateCourseReq req);
 
+
 }

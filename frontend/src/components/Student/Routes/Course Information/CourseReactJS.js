@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { CListGroup } from '@coreui/react';
-import './course.css';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { CListGroup } from "@coreui/react";
+import "./course.css";
+import { toast } from "react-toastify";
 
 const CourseReactJS = () => {
   const [courseData, setCourseData] = useState({
@@ -11,7 +12,7 @@ const CourseReactJS = () => {
     courseVideo: "",
     courseDateTime: {},
     instructorName: "",
-    learnWhatYouGet: []
+    learnWhatYouGet: [],
   });
 
   const [loading, setLoading] = useState(true);
@@ -21,49 +22,59 @@ const CourseReactJS = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchCourseData = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const response = await axios.get("http://localhost:8081/v1/api/course/detail", {
-          params: { courseId: 1 },
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        // Log toàn bộ response để kiểm tra
-        console.log("Dữ liệu trả về từ API:", response);
-        // Truy cập dữ liệu đúng theo cấu trúc: response.data.body.data
-        const course = response?.data?.body?.data;
-        if (!course) {
-          console.log("Không có dữ liệu trong response.");
-        }
-        setCourseData({
-          courseContent: course?.courseContent || [],
-          courseInfo: {
-            title: course?.courseName || "Không có tên khóa học",
-            description: course?.description || "Không có mô tả",
-            learningOutcome: course?.learningOutcome || "Không có kết quả học được"
-          },
-          courseVideo: course?.courseVideo || "",
-          courseDateTime: course?.courseDateTime || {},
-          instructorName: course?.instructorName || "Chưa có giảng viên",
-          learnWhatYouGet: course?.learnWhatYouGet || []
-        });
-        setLoading(false);
-      } catch (error) {
-        console.error("Lỗi khi lấy dữ liệu khóa học:", error);
-        setLoading(false);
-      }
-    };
     fetchCourseData();
+    checkRegisterCourse();
   }, []);
 
-  const handleRegister = () => {
-    setShowPopup(true);
-    setIsRegistered(true);
-    setTimeout(() => {
-      setShowPopup(false);
-    }, 2000);
+  const fetchCourseData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const courseid = localStorage.getItem("courseid");
+      const response = await axios.get(
+        "http://localhost:8081/v1/api/course/detail",
+        {
+          params: { courseId: courseid },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response?.data?.body?.errorStatus == 901) {
+        setCourseData(response?.data?.body?.data);
+        setLoading(false);
+      } else {
+        toast.error(
+          response?.data?.body?.message || "Lỗi khi lấy dữ liệu khóa học"
+        );
+      }
+    } catch (error) {
+      toast.error("Lỗi khi lấy dữ liệu khóa học:", error);
+      setLoading(false);
+    }
+  };
+
+  const checkRegisterCourse = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const courseid = localStorage.getItem("courseid");
+      const id = localStorage.getItem("id");
+      const response = await axios.get(
+        "http://localhost:8081/v1/api/registrations/check-register-course",
+        {
+          params: { userId: id, courseId: courseid },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response?.status === 200) {
+        setIsRegistered(response?.data?.success);
+      } else {
+        toast.error("Có lỗi khi lấy dữ liệu");
+      }
+    } catch (error) {
+      toast.error("Có lỗi khi lấy dữ liệu");
+    }
   };
 
   const handleClosePopup = () => {
@@ -71,26 +82,68 @@ const CourseReactJS = () => {
   };
 
   const handleStartCourse = () => {
-    navigate("/learn1");
+    const courseid = localStorage.getItem("courseid");
+    navigate(`/course/detail/${courseid}`);
+  };
+
+  const registerCourse = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const id = localStorage.getItem("id");
+      const courseid = localStorage.getItem("courseid");
+      const response = await axios.post(
+        "http://localhost:8081/v1/api/registrations",
+        {
+          studentId: id,
+          courseId: courseid,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response?.data?.success) {
+        toast.success(response?.data?.message || "đăng ký thành công");
+        setShowPopup(true);
+        setIsRegistered(true);
+      } else {
+        toast.error(response?.data?.message || "Lỗi");
+      }
+    } catch (error) {
+      if (error.response) {
+        if (error.response.status === 401) {
+          toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        } else {
+          toast.error(
+            `${error?.response?.data?.result?.message || "Lỗi không xác định"}`
+          );
+        }
+      } else {
+        toast.error("Lỗi không xác định. Vui lòng kiểm tra kết nối.");
+      }
+    }
   };
 
   return (
     <>
       <div className="courseReactJS-container">
         <div className="courseReactJS-info">
-          <h2>{loading ? "Đang tải..." : courseData.courseInfo.title}</h2>
-          <p>{loading ? "Đang tải mô tả khóa học..." : courseData.courseInfo.description}</p>
+          <h2>{loading ? "Đang tải..." : courseData?.courseName}</h2>
+          <p>
+            {loading ? "Đang tải mô tả khóa học..." : courseData?.description}
+          </p>
 
           <CListGroup className="courseReactJS-stars">
-            <h2>Bạn sẽ được học những gì?</h2>
+            <h2>Mục tiêu khóa học</h2>
             {loading ? (
               <p>Đang tải nội dung...</p>
             ) : (
-              courseData.learnWhatYouGet.map((item, index) => (
-                <div className="courseReactJS-item" key={index}>
-                  <i className="fas fa-arrow-right"></i> {item}
-                </div>
-              ))
+              <div className="courseReactJS-item">
+                <i className="fas fa-arrow-right"></i>
+                {courseData?.learningOutcome}
+              </div>
             )}
           </CListGroup>
         </div>
@@ -98,26 +151,25 @@ const CourseReactJS = () => {
         <div className="courseReactJS-image-section">
           <div className="courseReactJS-video-wrapper">
             {loading ? (
-              <p>Đang tải video...</p>
+              <p>Đang tải ảnh...</p>
+            ) : courseData.courseVideo ? (
+              <img
+                src={courseData?.backgroundImg}
+                alt="background"
+                style={{
+                  width: "100%",
+                  height: "215px",
+                  objectFit: "cover",
+                  borderRadius: "8px",
+                }}
+              />
             ) : (
-              courseData.courseVideo ? (
-                <iframe
-                  width="100%"
-                  height="215"
-                  src={courseData.courseVideo}
-                  title="ReactJS Course Intro"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                ></iframe>
-              ) : (
-                <p>Không có video</p>
-              )
+              <p>Không có ảnh</p>
             )}
           </div>
 
           <div className="courseReactJS-register-button">
-            <button onClick={isRegistered ? handleStartCourse : handleRegister}>
+            <button onClick={isRegistered ? handleStartCourse : registerCourse}>
               {isRegistered ? "Học ngay" : "Đăng ký ngay"}
             </button>
           </div>
@@ -127,9 +179,18 @@ const CourseReactJS = () => {
               <p>Đang tải thông tin ngày giờ...</p>
             ) : (
               <>
-                <p><i className="fas fa-calendar-alt"></i> Ngày: {courseData.courseDateTime.date || "Không có thông tin"}</p>
-                <p><i className="fas fa-clock"></i> Giờ: {courseData.courseDateTime.time || "Không có thông tin"}</p>
-                <p><i className="fas fa-chalkboard-teacher"></i> Giảng viên: {courseData.instructorName}</p>
+                <p>
+                  <i className="fas fa-calendar-alt"></i> Ngày bắt đầu:{" "}
+                  {courseData?.startDate || "Không có thông tin"}
+                </p>
+                <p>
+                  <i className="fas fa-calendar-alt"></i> Ngày kết thúc:{" "}
+                  {courseData?.endDate || "Không có thông tin"}
+                </p>
+                <p>
+                  <i className="fas fa-chalkboard-teacher"></i> Giảng viên:{" "}
+                  {courseData?.instructors[0]?.name}
+                </p>
               </>
             )}
           </div>
@@ -142,10 +203,13 @@ const CourseReactJS = () => {
           {loading ? (
             <p>Đang tải nội dung khóa học...</p>
           ) : (
-            courseData.courseContent.map((item, index) => (
+            courseData?.lessons?.map((item, index) => (
               <div className="courseReactJS-accordion-item" key={index}>
                 <button>
-                  <span><i className="fas fa-book-open"></i> {index + 1}. {item.title}</span>
+                  <span>
+                    <i className="fas fa-book-open"></i> {index + 1}.{" "}
+                    {item.lessonName}
+                  </span>
                   <i className="fas fa-lock"></i>
                 </button>
               </div>

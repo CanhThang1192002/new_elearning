@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import '../Style/hocvien.css';
-
+import "../Style/hocvien.css";
+import { toast } from "react-toastify";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 // Hàm trả về icon dựa vào category
 const getCategoryIcon = (category) => {
   switch (category) {
@@ -38,37 +40,23 @@ const MyCourse = () => {
   const [registeredCourses, setRegisteredCourses] = useState([]);
   const [continuingCourses, setContinuingCourses] = useState([]);
   const [completedCourses, setCompletedCourses] = useState([]);
+  const navigate = useNavigate();
 
   // API giả (dữ liệu khóa học với thêm dữ liệu)
   const fetchCoursesFromApi = async () => {
     try {
       // API giả cho các khóa học đã đăng ký (8 khóa học)
-      const registeredData = {
-        registeredCourses: [
-          {
-            image: "/logo512.png",
-            category: "Java",
-            duration: "3 Month",
-            title: "Java Core",
-            description: "Cung cấp kiến thức cơ bản về OOP, design pattern",
-          },
-          {
-            image: "/logo512.png",
-            category: "Python",
-            duration: "2 Month",
-            title: "Python Foundation",
-            description: "Học cú pháp cơ bản, xử lý dữ liệu và lập trình hướng đối tượng",
-          },
-          {
-            image: "/logo512.png",
-            category: "JavaScript",
-            duration: "1.5 Month",
-            title: "JavaScript ES6",
-            description: "Nắm vững cú pháp hiện đại, DOM, event, async/await",
-          },
-
-        ],
-      };
+      // const registeredData = {
+      //   registeredCourses: [
+      //     {
+      //       image: "/logo512.png",
+      //       category: "Java",
+      //       duration: "3 Month",
+      //       title: "Java Core",
+      //       description: "Cung cấp kiến thức cơ bản về OOP, design pattern",
+      //     },
+      //   ],
+      // };
 
       // API giả cho các khóa học tiếp tục (8 khóa học)
       const continuingData = {
@@ -115,7 +103,6 @@ const MyCourse = () => {
             title: "SwiftUI",
             description: "Xây dựng giao diện iOS hiện đại với SwiftUI",
           },
-
         ],
       };
 
@@ -157,12 +144,8 @@ const MyCourse = () => {
             title: "Go Cloud",
             description: "Phát triển ứng dụng cloud với Go",
           },
-
         ],
       };
-
-      // Cập nhật dữ liệu khóa học vào state
-      setRegisteredCourses(registeredData.registeredCourses);
       setContinuingCourses(continuingData.continuingCourses);
       setCompletedCourses(completedData.completedCourses);
     } catch (error) {
@@ -170,8 +153,47 @@ const MyCourse = () => {
     }
   };
 
+  const getCourseRegistered = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const id = localStorage.getItem("id");
+      const response = await axios.get(
+        "http://localhost:8081/v1/api/registrations",
+        {
+          params: { studentID: id },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response?.data?.body?.errorStatus === 901) {
+        setRegisteredCourses(response?.data?.body?.data);
+      } else {
+        toast.error(
+          response?.data?.body?.message || "Có lỗi khi lấy danh sách giảng viên"
+        );
+        setRegisteredCourses([]);
+      }
+    } catch (error) {
+      if (error.response) {
+        if (error.response.status === 401) {
+          toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        } else {
+          toast.error(
+            `${error?.response?.data?.result?.message || "Lỗi không xác định"}`
+          );
+        }
+      } else {
+        toast.error("Lỗi không xác định. Vui lòng kiểm tra kết nối.");
+      }
+      setRegisteredCourses([]);
+    }
+  };
+
   useEffect(() => {
     fetchCoursesFromApi();
+    getCourseRegistered();
   }, []);
 
   const coursesPerPage = 4;
@@ -202,7 +224,7 @@ const MyCourse = () => {
   };
 
   const formatCourseTitle = (title) => {
-    return title.replace('#', '-sharp').toLowerCase().replace(/ /g, '-');
+    return title.replace("#", "-sharp").toLowerCase().replace(/ /g, "-");
   };
 
   return (
@@ -215,28 +237,37 @@ const MyCourse = () => {
           </div>
           <div className="mycourse-course-grid">
             {currentRegisteredCourses.map((course, index) => (
-              <Link
-                to={`/course/${formatCourseTitle(course.title)}`}
+              <div
+                onClick={() => {
+                  navigate(
+                    `/course/detail/${formatCourseTitle(course?.courseName)}`
+                  );
+                  localStorage.setItem("courseid", course?.id);
+                }}
                 key={index}
                 className="mycourse-course-card"
               >
-                <img src={course.image} alt={course.title} className="mycourse-course-image" />
-                <div className="mycourse-course-header">
+                <img
+                  src={course?.image}
+                  alt={course?.courseName}
+                  className="mycourse-course-image"
+                />
+                {/* <div className="mycourse-course-header">
                   <span>
                     {getCategoryIcon(course.category)} {course.category}
                   </span>
                   <span>
                     <i className="fas fa-clock"></i> {course.duration}
                   </span>
-                </div>
-                <h3>{course.title}</h3>
-                <p>{course.description}</p>
-              </Link>
+                </div> */}
+                <h3>{course?.courseName}</h3>
+                <p>{course?.description}</p>
+              </div>
             ))}
           </div>
 
           {/* Khóa học tiếp tục */}
-          <div className="mycourse-courses-header">
+          {/* <div className="mycourse-courses-header">
             <h2>Khóa học tiếp tục</h2>
           </div>
           <div className="mycourse-course-grid">
@@ -246,7 +277,11 @@ const MyCourse = () => {
                 key={index}
                 className="mycourse-course-card"
               >
-                <img src={course.image} alt={course.title} className="mycourse-course-image" />
+                <img
+                  src={course.image}
+                  alt={course.title}
+                  className="mycourse-course-image"
+                />
                 <div className="mycourse-course-header">
                   <span>
                     {getCategoryIcon(course.category)} {course.category}
@@ -259,10 +294,10 @@ const MyCourse = () => {
                 <p>{course.description}</p>
               </Link>
             ))}
-          </div>
+          </div> */}
 
           {/* Khóa học đã hoàn thành */}
-          <div className="mycourse-courses-header">
+          {/* <div className="mycourse-courses-header">
             <h2>Khóa học đã hoàn thành</h2>
           </div>
           <div className="mycourse-course-grid">
@@ -272,7 +307,11 @@ const MyCourse = () => {
                 key={index}
                 className="mycourse-course-card"
               >
-                <img src={course.image} alt={course.title} className="mycourse-course-image" />
+                <img
+                  src={course.image}
+                  alt={course.title}
+                  className="mycourse-course-image"
+                />
                 <div className="mycourse-course-header">
                   <span>
                     {getCategoryIcon(course.category)} {course.category}
@@ -285,14 +324,14 @@ const MyCourse = () => {
                 <p>{course.description}</p>
               </Link>
             ))}
-          </div>
+          </div> */}
 
           {/* Nút phân trang */}
           <div className="mycourse-pagination-buttons">
             <button
               onClick={() => handlePageChange(1)}
               disabled={currentPage === 1}
-              className={currentPage === 1 ? 'mycourse-disabled' : ''}
+              className={currentPage === 1 ? "mycourse-disabled" : ""}
             >
               «
             </button>
@@ -300,7 +339,7 @@ const MyCourse = () => {
               <button
                 key={number + 1}
                 onClick={() => handlePageChange(number + 1)}
-                className={currentPage === number + 1 ? 'mycourse-active' : ''}
+                className={currentPage === number + 1 ? "mycourse-active" : ""}
               >
                 {number + 1}
               </button>
@@ -308,7 +347,7 @@ const MyCourse = () => {
             <button
               onClick={() => handlePageChange(totalPages)}
               disabled={currentPage === totalPages}
-              className={currentPage === totalPages ? 'mycourse-disabled' : ''}
+              className={currentPage === totalPages ? "mycourse-disabled" : ""}
             >
               »
             </button>

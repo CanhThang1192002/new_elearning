@@ -1,38 +1,38 @@
 // src/components/CourseManagement.js
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Modala from './Function/Modala';
-import '../Style/adcm.css';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import Modala from "./Function/Modala";
+import "../Style/adcm.css";
 
 const CourseManagement = () => {
   const [courses, setCourses] = useState([]);
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
-  const [confirmMessage, setConfirmMessage] = useState('');
+  const [confirmMessage, setConfirmMessage] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selectAll, setSelectAll] = useState(false);
   const [selectedCourses, setSelectedCourses] = useState([]);
   const [searchCriteria, setSearchCriteria] = useState({
-    courseName: '',
-    instructor: '',
-    creationDate: '',
-    status: '',
+    courseName: "",
+    instructor: "",
+    creationDate: "",
+    status: "",
   });
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
-  const [role, setRole] = useState('ADMIN'); // Giả định vai trò ADMIN tạm thời
-  const [token, setToken] = useState(localStorage.getItem('token') || '');
+  const [role, setRole] = useState("ADMIN"); // Giả định vai trò ADMIN tạm thời
+  const [token, setToken] = useState(localStorage.getItem("token") || "");
   const navigate = useNavigate();
 
   // Kiểm tra token hết hạn
   const isTokenExpired = (token) => {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      console.log('Token payload:', payload);
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      console.log("Token payload:", payload);
       return payload.exp * 1000 < Date.now();
     } catch (error) {
-      console.error('Lỗi decode token:', error);
+      console.error("Lỗi decode token:", error);
       return true;
     }
   };
@@ -40,41 +40,43 @@ const CourseManagement = () => {
   // Đăng nhập để lấy token
   const login = async () => {
     try {
-      const response = await fetch('http://localhost:8081/v1/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("http://localhost:8081/v1/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userCode: 'admin002',
-          password: 'your_password_here', // Thay bằng mật khẩu thực tế từ Postman
+          userCode: "admin002",
+          password: "your_password_here", // Thay bằng mật khẩu thực tế từ Postman
         }),
       });
       const data = await response.json();
-      console.log('Phản hồi login:', data);
+      console.log("Phản hồi login:", data);
       if (response.ok && data.body && data.body.accessToken) {
         const newToken = data.body.accessToken;
-        localStorage.setItem('token', newToken);
+        localStorage.setItem("token", newToken);
         setToken(newToken);
-        console.log('Token mới:', newToken);
+        console.log("Token mới:", newToken);
         return newToken;
       } else {
-        throw new Error(data.body?.message || 'Đăng nhập thất bại');
+        throw new Error(data.body?.message || "Đăng nhập thất bại");
       }
     } catch (error) {
-      console.error('Lỗi đăng nhập:', error);
+      console.error("Lỗi đăng nhập:", error);
       return null;
     }
   };
 
   // Xử lý lỗi xác thực
   const handleUnauthorized = async () => {
-    console.log('Token không hợp lệ, thử đăng nhập lại');
+    console.log("Token không hợp lệ, thử đăng nhập lại");
     const newToken = await login();
     if (!newToken) {
-      console.log('Đăng nhập thất bại, chuyển hướng đến login');
-      localStorage.removeItem('token');
-      setToken('');
-      alert('Phiên của bạn đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.');
-      navigate('/login');
+      console.log("Đăng nhập thất bại, chuyển hướng đến login");
+      localStorage.removeItem("token");
+      setToken("");
+      alert(
+        "Phiên của bạn đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại."
+      );
+      navigate("/login");
     }
     return newToken;
   };
@@ -85,25 +87,51 @@ const CourseManagement = () => {
       const params = new URLSearchParams({
         pageNumber: currentPage - 1,
         pageSize: itemsPerPage,
-        ...(searchCriteria.courseName && { courseName: searchCriteria.courseName }),
-        ...(role === 'ADMIN' && searchCriteria.instructor && { instructorName: searchCriteria.instructor }),
-        ...(role !== 'STUDENT' && searchCriteria.status && { statusCode: searchCriteria.status === 'Hoạt động' ? 'ACTIVE' : 'INACTIVE' }),
-        ...(role === 'ADMIN' && searchCriteria.creationDate && { createdBy: searchCriteria.creationDate }),
+        ...(searchCriteria.courseName && {
+          courseName: searchCriteria.courseName,
+        }),
+        ...(role === "ADMIN" &&
+          searchCriteria.instructor && {
+            instructorName: searchCriteria.instructor,
+          }),
+        ...(role !== "STUDENT" &&
+          searchCriteria.status && {
+            statusCode:
+              searchCriteria.status === "Hoạt động" ? "ACTIVE" : "INACTIVE",
+          }),
+        ...(role === "ADMIN" &&
+          searchCriteria.creationDate && {
+            createdBy: searchCriteria.creationDate,
+          }),
       });
 
-      console.log('Gửi request fetchCourses với token:', token);
-      const response = await fetch(`http://localhost:8081/v1/api/course?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      console.log('Phản hồi fetchCourses:', response.status, response.statusText);
+      console.log("Gửi request fetchCourses với token:", token);
+      const response = await fetch(
+        `http://localhost:8081/v1/api/course?${params}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      console.log(
+        "Phản hồi fetchCourses:",
+        response.status,
+        response.statusText
+      );
       if (response.status === 401) {
-        console.log('Lỗi 401 từ fetchCourses, phản hồi:', await response.text());
-        const newToken = await handleUnauthorized();
+        console.log(
+          "Lỗi 401 từ fetchCourses, phản hồi:",
+          await response.text()
+        );
+        // const newToken = await handleUnauthorized();
+        const newToken = localStorage.getItem("token");
         if (newToken) {
           // Thử lại với token mới
-          const retryResponse = await fetch(`http://localhost:8081/v1/api/course?${params}`, {
-            headers: { Authorization: `Bearer ${newToken}` },
-          });
+          const retryResponse = await fetch(
+            `http://localhost:8081/v1/api/course?${params}`,
+            {
+              headers: { Authorization: `Bearer ${newToken}` },
+            }
+          );
           if (!retryResponse.ok) {
             throw new Error(`HTTP error! status: ${retryResponse.status}`);
           }
@@ -118,41 +146,45 @@ const CourseManagement = () => {
       const data = await response.json();
       processCourses(data);
     } catch (error) {
-      console.error('Lỗi gọi API:', error);
+      console.error("Lỗi gọi API:", error);
     }
   };
 
   // Xử lý dữ liệu khóa học
   const processCourses = (data) => {
-    console.log('Dữ liệu fetchCourses:', data);
+    console.log("Dữ liệu fetchCourses:", data);
     if (data.body && data.body.errorStatus === 901) {
-      const coursesData = data.body.data.map(course => ({
+      const coursesData = data.body.data.map((course) => ({
         id: course.id,
         courseName: course.courseName,
-        instructor: course.instructorName || 'N/A',
+        instructor: course.instructors[0]?.name || "N/A",
         lessons: course.lessonCount || 0,
         description: course.description,
-        startDate: new Date(course.startDate).toLocaleDateString('vi-VN'),
-        endDate: new Date(course.endDate).toLocaleDateString('vi-VN'),
-        status: course.statusCode === 'ACTIVE' ? 'Hoạt động' : 'Không hoạt động',
+        startDate: new Date(course.startDate).toLocaleDateString("vi-VN"),
+        endDate: new Date(course.endDate).toLocaleDateString("vi-VN"),
+        status:
+          course.statusCode === "ACTIVE" ? "Hoạt động" : "Không hoạt động",
       }));
       setCourses(coursesData);
       setFilteredCourses(coursesData);
       setTotalPages(data.body.pagination.totalPages);
     } else {
-      console.error('Lỗi lấy danh sách khóa học:', data.body?.message || 'Lỗi không xác định');
+      console.error(
+        "Lỗi lấy danh sách khóa học:",
+        data.body?.message || "Lỗi không xác định"
+      );
     }
   };
 
   // Khởi tạo component
   useEffect(() => {
     const initialize = async () => {
-      console.log('Token hiện tại:', token);
+      console.log("Token hiện tại:", token);
       if (!token || isTokenExpired(token)) {
-        console.log('Không có token hoặc token hết hạn, thử đăng nhập');
+        console.log("Không có token hoặc token hết hạn, thử đăng nhập");
         const newToken = await login();
         if (!newToken) {
-          console.log('Đăng nhập thất bại, chuyển hướng đến login');
+          console.log("Đăng nhập thất bại, chuyển hướng đến login");
           handleUnauthorized();
           return;
         }
@@ -170,10 +202,10 @@ const CourseManagement = () => {
     if (token && role) {
       fetchCourses();
     }
-  }, [currentPage, itemsPerPage, searchCriteria, token, role]);
+  }, [currentPage, itemsPerPage, token, role]);
 
   const handleAddCourse = () => {
-    navigate('/add-course');
+    navigate("/add-course");
   };
 
   const toggleSelectAll = () => {
@@ -187,58 +219,40 @@ const CourseManagement = () => {
 
   const handleCheckboxChange = (id) => {
     setSelectedCourses((prev) =>
-      prev.includes(id) ? prev.filter((courseId) => courseId !== id) : [...prev, id]
+      prev.includes(id)
+        ? prev.filter((courseId) => courseId !== id)
+        : [...prev, id]
     );
   };
 
   const handleEditCourse = async (course) => {
-    try {
-      const response = await fetch(`http://localhost:8081/v1/api/course/detail?courseId=${course.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.status === 401) {
-        console.log('Lỗi 401 từ handleEditCourse, phản hồi:', await response.text());
-        const newToken = await handleUnauthorized();
-        if (newToken) {
-          const retryResponse = await fetch(`http://localhost:8081/v1/api/course/detail?courseId=${course.id}`, {
-            headers: { Authorization: `Bearer ${newToken}` },
-          });
-          if (!retryResponse.ok) {
-            throw new Error(`HTTP error! status: ${retryResponse.status}`);
-          }
-          const retryData = await retryResponse.json();
-          processCourseDetail(retryData, course.id);
-        }
-        return;
-      }
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      processCourseDetail(data, course.id);
-    } catch (error) {
-      console.error('Lỗi gọi API chi tiết:', error);
-    }
+    localStorage.setItem("courseid", course?.id);
+    navigate(`/edit-course-admin/${course?.id}`);
   };
 
   const processCourseDetail = (data, courseId) => {
     if (data.body && data.body.errorStatus === 901) {
-      navigate(`/edit-course/${courseId}`, { state: { course: data.body.data } });
+      navigate(`/edit-course/${courseId}`, {
+        state: { course: data.body.data },
+      });
     } else {
-      console.error('Lỗi lấy chi tiết khóa học:', data.body?.message || 'Lỗi không xác định');
+      console.error(
+        "Lỗi lấy chi tiết khóa học:",
+        data.body?.message || "Lỗi không xác định"
+      );
     }
   };
 
   const showConfirmModal = (action) => {
     if (selectedCourses.length === 0) {
-      alert('Vui lòng chọn ít nhất một khóa học');
+      alert("Vui lòng chọn ít nhất một khóa học");
       return;
     }
     setConfirmAction(action);
     setConfirmMessage(
-      action === 'disable'
-        ? 'Bạn có chắc muốn vô hiệu hóa các khóa học đã chọn?'
-        : 'Bạn có chắc muốn kích hoạt lại các khóa học đã chọn?'
+      action === "disable"
+        ? "Bạn có chắc muốn vô hiệu hóa các khóa học đã chọn?"
+        : "Bạn có chắc muốn kích hoạt lại các khóa học đã chọn?"
     );
     setConfirmModalOpen(true);
   };
@@ -250,27 +264,37 @@ const CourseManagement = () => {
 
   const handleConfirm = async () => {
     try {
-      const statusCode = confirmAction === 'disable' ? 'INACTIVE' : 'ACTIVE';
-      const response = await fetch('http://localhost:8081/v1/api/course/bulk-update', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ courseIds: selectedCourses, statusCode }),
-      });
+      const statusCode = confirmAction === "disable" ? "INACTIVE" : "ACTIVE";
+      const response = await fetch(
+        "http://localhost:8081/v1/api/course/bulk-update",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ courseIds: selectedCourses, statusCode }),
+        }
+      );
       if (response.status === 401) {
-        console.log('Lỗi 401 từ handleConfirm, phản hồi:', await response.text());
-        const newToken = await handleUnauthorized();
+        console.log(
+          "Lỗi 401 từ handleConfirm, phản hồi:",
+          await response.text()
+        );
+        // const newToken = await handleUnauthorized();
+        const newToken = localStorage.getItem("token");
         if (newToken) {
-          const retryResponse = await fetch('http://localhost:8081/v1/api/course/bulk-update', {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${newToken}`,
-            },
-            body: JSON.stringify({ courseIds: selectedCourses, statusCode }),
-          });
+          const retryResponse = await fetch(
+            "http://localhost:8081/v1/api/course/bulk-update",
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${newToken}`,
+              },
+              body: JSON.stringify({ courseIds: selectedCourses, statusCode }),
+            }
+          );
           if (!retryResponse.ok) {
             throw new Error(`HTTP error! status: ${retryResponse.status}`);
           }
@@ -285,7 +309,7 @@ const CourseManagement = () => {
       const data = await response.json();
       processBulkUpdate(data);
     } catch (error) {
-      console.error('Lỗi cập nhật trạng thái:', error);
+      console.error("Lỗi cập nhật trạng thái:", error);
     }
   };
 
@@ -296,7 +320,10 @@ const CourseManagement = () => {
       setSelectedCourses([]);
       setSelectAll(false);
     } else {
-      console.error('Lỗi cập nhật trạng thái:', data.body?.message || 'Lỗi không xác định');
+      console.error(
+        "Lỗi cập nhật trạng thái:",
+        data.body?.message || "Lỗi không xác định"
+      );
     }
   };
 
@@ -315,14 +342,18 @@ const CourseManagement = () => {
     setCurrentPage(1);
   };
 
-  const canDisable = selectedCourses.length > 0 && selectedCourses.some((id) => {
-    const course = filteredCourses.find((course) => course.id === id);
-    return course && course.status === 'Hoạt động';
-  });
-  const canEnable = selectedCourses.length > 0 && selectedCourses.some((id) => {
-    const course = filteredCourses.find((course) => course.id === id);
-    return course && course.status === 'Không hoạt động';
-  });
+  const canDisable =
+    selectedCourses.length > 0 &&
+    selectedCourses.some((id) => {
+      const course = filteredCourses.find((course) => course.id === id);
+      return course && course.status === "Hoạt động";
+    });
+  const canEnable =
+    selectedCourses.length > 0 &&
+    selectedCourses.some((id) => {
+      const course = filteredCourses.find((course) => course.id === id);
+      return course && course.status === "Không hoạt động";
+    });
 
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
@@ -343,7 +374,7 @@ const CourseManagement = () => {
                 onChange={handleSearchChange}
               />
             </label>
-            {role === 'ADMIN' && (
+            {role === "ADMIN" && (
               <label htmlFor="instructor">
                 Giảng viên
                 <input
@@ -355,7 +386,7 @@ const CourseManagement = () => {
                 />
               </label>
             )}
-            {role === 'ADMIN' && (
+            {role === "ADMIN" && (
               <label htmlFor="creationDate">
                 Người tạo
                 <input
@@ -367,10 +398,14 @@ const CourseManagement = () => {
                 />
               </label>
             )}
-            {role !== 'STUDENT' && (
+            {role !== "STUDENT" && (
               <label htmlFor="status">
                 Trạng thái
-                <select name="status" value={searchCriteria.status} onChange={handleSearchChange}>
+                <select
+                  name="status"
+                  value={searchCriteria.status}
+                  onChange={handleSearchChange}
+                >
                   <option value="">Tất cả</option>
                   <option value="Hoạt động">Hoạt động</option>
                   <option value="Không hoạt động">Không hoạt động</option>
@@ -384,24 +419,24 @@ const CourseManagement = () => {
               <button className="btn btn-green" onClick={handleAddCourse}>
                 Thêm
               </button>
-              {role !== 'STUDENT' && (
+              {/* {role !== "STUDENT" && (
                 <>
                   <button
                     className="btn btn-red"
-                    onClick={() => showConfirmModal('disable')}
+                    onClick={() => showConfirmModal("disable")}
                     disabled={!canDisable}
                   >
                     Vô hiệu hóa
                   </button>
                   <button
                     className="btn btn-yellow"
-                    onClick={() => showConfirmModal('enable')}
+                    onClick={() => showConfirmModal("enable")}
                     disabled={!canEnable}
                   >
                     Kích hoạt
                   </button>
                 </>
-              )}
+              )} */}
               <button className="btn btn-blue" onClick={handleSearch}>
                 Tìm kiếm
               </button>
@@ -459,20 +494,23 @@ const CourseManagement = () => {
                       ></i>
                     </td>
                   </tr>
-                ))}Fr
+                ))}
               </tbody>
             </table>
           </div>
 
           <div className="pagination-buttons">
-            <button onClick={() => handlePageChange(1)} disabled={currentPage === 1}>
+            <button
+              onClick={() => handlePageChange(1)}
+              disabled={currentPage === 1}
+            >
               «
             </button>
             {[...Array(totalPages).keys()].map((number) => (
               <button
                 key={number + 1}
                 onClick={() => handlePageChange(number + 1)}
-                className={currentPage === number + 1 ? 'active' : ''}
+                className={currentPage === number + 1 ? "active" : ""}
               >
                 {number + 1}
               </button>

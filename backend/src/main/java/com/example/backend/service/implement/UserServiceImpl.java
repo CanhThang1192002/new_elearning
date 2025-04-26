@@ -13,7 +13,9 @@ import com.example.backend.dto.request.UserRegisterReq;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.example.backend.common.util.DateTimeUtil.formatDate;
 
@@ -221,4 +223,11 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RuntimeException("User creation failed."));
     }
 
+    @Override
+    public List<UserResp> getUsersByRole(Integer roleId) {
+        List<User> users = userRepository.findByRoleId(roleId);
+        return users.stream()
+                .map(UserResp::fromUser)
+                .collect(Collectors.toList());
+    }
 }

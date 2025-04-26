@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import '../Style/hocvien.css';
+import "../Style/hocvien.css";
+import { useNavigate } from "react-router-dom";
 
 function Home() {
   const [courses, setCourses] = useState([]);
@@ -8,7 +9,8 @@ function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const coursesPerPage = 8;
-  const bannerImages = ['/logo512.png', '/logo512.png', '/img/OIP (2).jpg'];
+  const bannerImages = ["/logo512.png", "/logo512.png", "/img/OIP (2).jpg"];
+  const navigate = useNavigate();
 
   // Lấy token từ localStorage
   const token = localStorage.getItem("token");
@@ -26,7 +28,7 @@ function Home() {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         });
 
@@ -52,13 +54,18 @@ function Home() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentBannerIndex((prevIndex) => (prevIndex + 1) % bannerImages.length);
+      setCurrentBannerIndex(
+        (prevIndex) => (prevIndex + 1) % bannerImages.length
+      );
     }, 3000);
     return () => clearInterval(interval);
   }, [bannerImages.length]);
 
   const totalPages = Math.ceil(courses.length / coursesPerPage);
-  const currentCourses = courses.slice((currentPage - 1) * coursesPerPage, currentPage * coursesPerPage);
+  const currentCourses = courses.slice(
+    (currentPage - 1) * coursesPerPage,
+    currentPage * coursesPerPage
+  );
 
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
@@ -87,11 +94,20 @@ function Home() {
   return (
     <main className="homestudents-main-content">
       <div className="homestudents-banner">
-        <img src={bannerImages[currentBannerIndex]} alt="Banner" className="homestudents-banner-image" />
+        <img
+          src={bannerImages[currentBannerIndex]}
+          alt="Banner"
+          className="homestudents-banner-image"
+        />
       </div>
       <div className="homestudents-pagination">
         {bannerImages.map((_, index) => (
-          <div key={index} className={index === currentBannerIndex ? 'homestudents-active' : ''}></div>
+          <div
+            key={index}
+            className={
+              index === currentBannerIndex ? "homestudents-active" : ""
+            }
+          ></div>
         ))}
       </div>
 
@@ -101,17 +117,32 @@ function Home() {
         </div>
         <div className="homestudents-course-grid">
           {currentCourses.map((course, index) => (
-            <Link to={`/course/${index}`} key={index} className="homestudents-course-card-link">
+            <div
+              onClick={() => {
+                localStorage.setItem("courseid", course?.id);
+                navigate(`/course/${index}`);
+              }}
+              key={index}
+              className="homestudents-course-card-link"
+            >
               <div className="homestudents-course-card">
-                <img src={course.image} alt={course.title} className="homestudents-course-image" />
+                <img
+                  src={course.image}
+                  alt={course.title}
+                  className="homestudents-course-image"
+                />
                 <div className="homestudents-course-header">
-                  <span>{getCategoryIcon(course.category)} {course.category}</span>
-                  <span><i className="fas fa-clock"></i> {course.duration}</span>
+                  <span>
+                    {getCategoryIcon(course.category)} {course.category}
+                  </span>
+                  <span>
+                    <i className="fas fa-clock"></i> {course.duration}
+                  </span>
                 </div>
                 <h3>{course.title}</h3>
                 <p>{course.description}</p>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
 
@@ -119,7 +150,7 @@ function Home() {
           <button
             onClick={() => handlePageChange(1)}
             disabled={currentPage === 1}
-            className={currentPage === 1 ? 'homestudents-disabled' : ''}
+            className={currentPage === 1 ? "homestudents-disabled" : ""}
           >
             «
           </button>
@@ -127,7 +158,9 @@ function Home() {
             <button
               key={number + 1}
               onClick={() => handlePageChange(number + 1)}
-              className={currentPage === number + 1 ? 'homestudents-active' : ''}
+              className={
+                currentPage === number + 1 ? "homestudents-active" : ""
+              }
             >
               {number + 1}
             </button>
@@ -135,7 +168,9 @@ function Home() {
           <button
             onClick={() => handlePageChange(totalPages)}
             disabled={currentPage === totalPages}
-            className={currentPage === totalPages ? 'homestudents-disabled' : ''}
+            className={
+              currentPage === totalPages ? "homestudents-disabled" : ""
+            }
           >
             »
           </button>

@@ -1,19 +1,27 @@
 // src/components/EditCourse.js
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
-import Modala from './Modala';
-import '../../Style/adcm.css';
-import { useCourseContext } from '../Function/Context/CourseContext';
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+import Modala from "./Modala";
+import "../../Style/adcm.css";
+import { useCourseContext } from "../Function/Context/CourseContext";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 // Định nghĩa type cho DnD
 const ItemTypes = {
-  LECTURE: 'lecture',
+  LECTURE: "lecture",
 };
 
 // Component cho từng bài học có thể kéo thả
-const LectureItem = ({ lecture, index, moveLecture, handleEditLecture, handleRemoveLecture }) => {
+const LectureItem = ({
+  lecture,
+  index,
+  moveLecture,
+  handleEditLecture,
+  handleRemoveLecture,
+}) => {
   const [{ isDragging }, drag] = useDrag({
     type: ItemTypes.LECTURE,
     item: { index },
@@ -36,11 +44,19 @@ const LectureItem = ({ lecture, index, moveLecture, handleEditLecture, handleRem
     <div
       ref={(node) => drag(drop(node))}
       className="lecture-item"
-      style={{ opacity: isDragging ? 0.5 : 1, display: 'flex', alignItems: 'center', marginBottom: '10px' }}
+      style={{
+        opacity: isDragging ? 0.5 : 1,
+        display: "flex",
+        alignItems: "center",
+        marginBottom: "10px",
+      }}
     >
-      <span style={{ marginRight: '10px', width: '30px' }}>{index + 1}.</span>
-      <span style={{ flex: 1 }}>{lecture.name || 'Bài học chưa có tên'}</span>
-      <button onClick={() => handleEditLecture(index)} style={{ marginRight: '10px' }}>
+      <span style={{ marginRight: "10px", width: "30px" }}>{index + 1}.</span>
+      <span style={{ flex: 1 }}>{lecture.name || "Bài học chưa có tên"}</span>
+      <button
+        onClick={() => handleEditLecture(index)}
+        style={{ marginRight: "10px" }}
+      >
         <i className="fas fa-edit"></i>
       </button>
       <button className="remove-btn" onClick={() => handleRemoveLecture(index)}>
@@ -50,20 +66,20 @@ const LectureItem = ({ lecture, index, moveLecture, handleEditLecture, handleRem
   );
 };
 
-const EditCourse = () => {
+const EditCourse = ({ isAdmin }) => {
   const { updateCourse } = useCourseContext();
   const navigate = useNavigate();
   const location = useLocation();
   const course = location.state?.course;
 
   const [formData, setFormData] = useState({
-    courseName: course?.courseName || '',
-    instructor: course?.instructor || '',
-    lessons: course?.lessons || '',
-    description: course?.description || '',
-    startDate: course?.startDate || '',
-    endDate: course?.endDate || '',
-    status: course?.status || 'Hoạt động',
+    courseName: course?.courseName || "",
+    instructor: course?.instructor || "",
+    lessons: course?.lessons || "",
+    description: course?.description || "",
+    startDate: course?.startDate || "",
+    endDate: course?.endDate || "",
+    status: course?.status || "Hoạt động",
   });
 
   const [coverImage, setCoverImage] = useState(course?.coverImage || null);
@@ -78,23 +94,93 @@ const EditCourse = () => {
   const [showLectureModal, setShowLectureModal] = useState(false);
   const [currentLectureIndex, setCurrentLectureIndex] = useState(null);
   const [currentLectureData, setCurrentLectureData] = useState(null);
-  const [searchCode, setSearchCode] = useState('');
-  const [searchName, setSearchName] = useState('');
+  const [searchCode, setSearchCode] = useState("");
+  const [searchName, setSearchName] = useState("");
   const [selectedInstructor, setSelectedInstructor] = useState(null);
   const [isSorting, setIsSorting] = useState(false);
+  const [dataCourse, setDataCourse] = useState();
+  const [listTeacher, setListTeacher] = useState([]);
+  const [teacher, setTeacher] = useState();
 
   useEffect(() => {
-    if (!course) {
-      navigate('/course-management');
+    getAllTeacher();
+    fetchCourseData();
+  }, []);
+
+  const fetchCourseData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const courseid = localStorage.getItem("courseid");
+      const response = await axios.get(
+        "http://localhost:8081/v1/api/course/detail",
+        {
+          params: { courseId: courseid },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response?.data?.body?.errorStatus === 901) {
+        const listLesson = response?.data?.body?.data?.lessons?.map(
+          (lesson) => ({
+            ...lesson,
+            videoType: "url",
+          })
+        );
+        const litCourse = { ...response?.data?.body?.data, lesson: listLesson };
+        setDataCourse(litCourse);
+        setTeacher(litCourse?.instructors[0]);
+        const parts = litCourse?.backgroundImg.split("/");
+        const uploadsIndex = parts.lastIndexOf("uploads");
+        const desiredPath = "/" + parts.slice(uploadsIndex).join("/");
+        console.log("ảnh", `http://localhost:8081${desiredPath}`);
+        setCoverImage(`http://localhost:8081`);
+      } else {
+        toast.error(response?.data?.body?.message || "Lỗi không xác định");
+      }
+    } catch (error) {
+      toast.error("Lỗi khi lấy dữ liệu khóa học:", error);
     }
-  }, [course, navigate]);
+  };
+
+  const getAllTeacher = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        "http://localhost:8081/v1/api/user/by-role?roleId=2",
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response?.status === 200) {
+        setListTeacher(response.data);
+      } else {
+        toast.error(response.message || "Có lỗi khi lấy danh sách giảng viên");
+      }
+    } catch (error) {
+      if (error.response) {
+        if (error.response.status === 401) {
+          toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        } else {
+          toast.error(
+            `${error?.response?.data?.result?.message || "Lỗi không xác định"}`
+          );
+        }
+      } else {
+        toast.error("Lỗi không xác định. Vui lòng kiểm tra kết nối.");
+      }
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAddObjective = () => setObjectives([...objectives, '']);
+  const handleAddObjective = () => setObjectives([...objectives, ""]);
 
   const handleObjectiveChange = (index, value) => {
     const newObjectives = [...objectives];
@@ -109,7 +195,13 @@ const EditCourse = () => {
   };
 
   const handleAddLecture = () => {
-    const newLecture = { order: lectures.length + 1, name: '', videoType: 'url', video: '', document: '' };
+    const newLecture = {
+      order: lectures.length + 1,
+      name: "",
+      videoType: "url",
+      video: "",
+      document: "",
+    };
     setLectures([...lectures, newLecture]);
     setTempLectures([...lectures, newLecture]);
   };
@@ -136,7 +228,7 @@ const EditCourse = () => {
 
   const handleFileUpload = (file) => {
     const videoUrl = URL.createObjectURL(file);
-    handleLectureChange('video', videoUrl);
+    handleLectureChange("video", videoUrl);
   };
 
   const handleSaveLecture = () => {
@@ -168,7 +260,7 @@ const EditCourse = () => {
   const handleSaveSort = () => {
     setLectures([...tempLectures]);
     setIsSorting(false);
-    console.log('Danh sách bài học đã lưu:', tempLectures);
+    console.log("Danh sách bài học đã lưu:", tempLectures);
   };
 
   const handleCancelSort = () => {
@@ -184,116 +276,158 @@ const EditCourse = () => {
     }
   };
 
-  const handleStudentSelect = (e) => {
-    const selected = Array.from(e.target.selectedOptions).map((opt) => opt.value);
-    setStudents(selected);
-  };
-
-  const instructors = [
-    { id: 1, code: 'US0001', name: 'Nguyễn Văn A', email: 'nva@gmail.com', phone: '0123456789', dob: '01/01/1990', experience: 2 },
-    { id: 2, code: 'US0002', name: 'Trần Thị B', email: 'ttb@gmail.com', phone: '0987654321', dob: '15/05/1985', experience: 5 },
-    { id: 3, code: 'US0003', name: 'Lê Văn C', email: 'lvc@gmail.com', phone: '0912345678', dob: '20/10/1992', experience: 3 },
-    { id: 4, code: 'US0004', name: 'Phạm Thị D', email: 'ptd@gmail.com', phone: '0932145678', dob: '30/12/1988', experience: 4 },
-  ];
-
-  const filteredInstructors = instructors.filter((instructor) =>
-    (searchCode ? instructor.code.toLowerCase().includes(searchCode.toLowerCase()) : true) &&
-    (searchName ? instructor.name.toLowerCase().includes(searchName.toLowerCase()) : true)
+  const filteredInstructors = listTeacher.filter(
+    (instructor) =>
+      (searchCode
+        ? instructor.code.toLowerCase().includes(searchCode.toLowerCase())
+        : true) &&
+      (searchName
+        ? instructor.name.toLowerCase().includes(searchName.toLowerCase())
+        : true)
   );
 
   const handleInstructorSelect = (instructor) => {
-    setSelectedInstructor(instructor);
+    setTeacher(instructor);
+    setDataCourse({ ...dataCourse, instructors: [instructor] });
   };
 
   const handleConfirmInstructor = () => {
     if (selectedInstructor) {
       setFormData((prev) => ({ ...prev, instructor: selectedInstructor.name }));
-      console.log('Giảng viên đã chọn:', selectedInstructor);
+      console.log("Giảng viên đã chọn:", selectedInstructor);
     }
     setShowInstructorModal(false);
-    setSearchCode('');
-    setSearchName('');
+    setSearchCode("");
+    setSearchName("");
     setSelectedInstructor(null);
   };
 
   const handleCancelInstructor = () => {
     setShowInstructorModal(false);
-    setSearchCode('');
-    setSearchName('');
+    setSearchCode("");
+    setSearchName("");
     setSelectedInstructor(null);
   };
 
-  const handleSave = () => {
-     const newErrors = {};
-    
-     // Kiểm tra dữ liệu đầu vào
-     if (!formData.courseName) newErrors.courseName = 'Tên khóa học không được bỏ trống';
-     if (!formData.instructor) newErrors.instructor = 'Giảng viên là bắt buộc';
-     if (!formData.lessons) newErrors.lessons = 'Số lượng bài học không được bỏ trống';
-     if (!formData.description) newErrors.description = 'Nội dung không được bỏ trống';
-     if (!formData.startDate) newErrors.startDate = 'Ngày bắt đầu là bắt buộc';
-     if (!formData.endDate) newErrors.endDate = 'Ngày kết thúc là bắt buộc';
-    
-     objectives.forEach((objective, index) => {
-      if (!objective) newErrors[`objective${index}`] = 'Mục tiêu không được để trống';
-     });
-    
-     if (lectures.length === 0) {
-      newErrors.lectures = 'Phải có ít nhất một bài giảng';
-     } else {
-      lectures.forEach((lecture, index) => {
-       if (!lecture.order) newErrors[`lectureOrder${index}`] = 'Thứ tự bài giảng không được để trống';
-       if (!lecture.name) newErrors[`lectureName${index}`] = 'Tên bài giảng không được để trống';
-       if (!lecture.video) newErrors[`lectureVideo${index}`] = 'Video bài giảng không được để trống';
-       if (!lecture.document) newErrors[`lectureDocument${index}`] = 'Tài liệu bài giảng không được để trống';
-      });
-     }
-    
-     if (!coverImage) newErrors.coverImage = 'Ảnh bìa là bắt buộc';
-    
-     setErrors(newErrors);
-    
-     if (Object.keys(newErrors).length === 0) {
-      const updatedCourse = {
-       id: course.id,
-       ...formData,
-       lessons: Number(formData.lessons),
-       objectives,
-       lectures,
-       students,
-       coverImage,
+  const handleSave = async () => {
+    const newErrors = {};
+
+    // Kiểm tra dữ liệu đầu vào
+    if (!dataCourse.courseName)
+      newErrors.courseName = "Tên khóa học không được bỏ trống";
+    // if (!dataCourse.instructors.length <= 0)
+    //   newErrors.instructor = "Giảng viên là bắt buộc";
+    if (!dataCourse.description)
+      newErrors.description = "Nội dung không được bỏ trống";
+    if (!dataCourse.startDate) newErrors.startDate = "Ngày bắt đầu là bắt buộc";
+    if (!dataCourse.endDate) newErrors.endDate = "Ngày kết thúc là bắt buộc";
+    if (!dataCourse.learningOutcome)
+      newErrors.learningOutcome = "Mục tiêu không được để trống";
+
+    if (dataCourse?.lessons?.length === 0) {
+      newErrors.lessons = "Phải có ít nhất một bài giảng";
+    }
+    // else {
+    //   dataCourse?.lessons?.forEach((lecture, index) => {
+    //     if (!lecture.lessonName)
+    //       newErrors[`lectureName${index}`] =
+    //         "Tên bài giảng không được để trống";
+    //     if (!lecture.videoLink)
+    //       newErrors[`lectureVideo${index}`] =
+    //         "Video bài giảng không được để trống";
+    //     if (!lecture.resourceLink)
+    //       newErrors[`lectureDocument${index}`] =
+    //         "Tài liệu bài giảng không được để trống";
+    //   });
+    // }
+
+    if (!coverImage) newErrors.coverImage = "Ảnh bìa là bắt buộc";
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length === 0) {
+      const listLessons = dataCourse.lessons?.map((item) => ({
+        lessonId: item?.lessonId,
+        lessonName: item?.lessonName,
+        lessonOrder: 1,
+        videoLink: item?.videoLink,
+        resourceLink: item?.resourceLink,
+      }));
+      const request = {
+        courseCode: dataCourse?.courseCode,
+        courseName: dataCourse?.courseName,
+        description: dataCourse?.description,
+        learningOutcome: dataCourse?.learningOutcome,
+        backgroundImg: dataCourse?.backgroundImg,
+        startDate: dataCourse?.startDate,
+        endDate: dataCourse?.endDate,
+        lessonCount: dataCourse?.lessons?.length,
+        statusCode: dataCourse?.statusCode,
+        lessons: listLessons,
+        instructorIds: teacher?.userCode,
       };
-    
-      const token = localStorage.getItem('token'); // Lấy token từ localStorage
-    
-      fetch('http://localhost:8080/v1/api/course', {
-       method: 'PUT',
-       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-       },
-       body: JSON.stringify(updatedCourse),
-      })
-      .then((res) => {
-       if (!res.ok) {
-        throw new Error('Cập nhật khóa học thất bại');
-       }
-       return res.json();
-      })
-      .then((data) => {
-       console.log('Khóa học đã được cập nhật:', data);
-       setShowSuccessModal(true);
-       setTimeout(() => {
-        navigate('/course-management');
-       }, 2000);
-      })
-      .catch((error) => {
-       console.error('Lỗi khi cập nhật khóa học:', error);
-       alert('Đã xảy ra lỗi khi cập nhật khóa học!');
-      });
-     }
-    };
-    
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.put(
+          "http://localhost:8081/v1/api/course",
+          request,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (response?.data?.body?.errorStatus == 901) {
+          toast.success("Cập nhật thành công");
+          if (isAdmin) navigate("/course-management");
+          else navigate("/course");
+        } else {
+          toast.error(response?.data?.body?.message || "Lỗi không xác định");
+        }
+      } catch (error) {
+        toast.error("Lỗi không xác định:", error);
+      }
+      // const courseid = localStorage.getItem("courseid");
+      // const updatedCourse = {
+      //   id: courseid,
+      //   ...dataCourse,
+      //   lessons: dataCourse?.lessons?.length,
+      //   objectives,
+      //   lectures,
+      //   students,
+      //   coverImage,
+      // };
+
+      // const token = localStorage.getItem("token");
+
+      // fetch("http://localhost:8081/v1/api/course", {
+      //   method: "PUT",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //     Authorization: `Bearer ${token}`,
+      //   },
+      //   body: JSON.stringify(updatedCourse),
+      // })
+      //   .then((res) => {
+      //     if (!res.ok) {
+      //       throw new Error("Cập nhật khóa học thất bại");
+      //     }
+      //     return res.json();
+      //   })
+      //   .then((data) => {
+      //     console.log("Khóa học đã được cập nhật:", data);
+      //     setShowSuccessModal(true);
+      //     setTimeout(() => {
+      //       navigate("/course-management");
+      //     }, 2000);
+      //   })
+      //   .catch((error) => {
+      //     console.error("Lỗi khi cập nhật khóa học:", error);
+      //     alert("Đã xảy ra lỗi khi cập nhật khóa học!");
+      //   });
+    }
+  };
+
   const handleCancel = () => setShowCancelModal(true);
 
   const handleOpenInstructorModal = () => {
@@ -306,47 +440,64 @@ const EditCourse = () => {
         <div className="edit-course-section">
           <h2>Mô tả</h2>
           <div className="edit-course-input-group">
-            <label htmlFor="course-name">Tên khóa học <span style={{ color: 'red' }}>*</span></label>
+            <label htmlFor="course-name">
+              Tên khóa học <span style={{ color: "red" }}>*</span>
+            </label>
             <input
               type="text"
               id="course-name"
               name="courseName"
-              value={formData.courseName}
-              onChange={handleChange}
+              value={dataCourse?.courseName}
+              onChange={(e) => {
+                setDataCourse({ ...dataCourse, courseName: e.target.value });
+              }}
               required
             />
-            {errors.courseName && <span className="error">{errors.courseName}</span>}
+            {errors.courseName && (
+              <span className="error">{errors.courseName}</span>
+            )}
           </div>
 
           <div className="edit-course-input-group">
-            <label htmlFor="lessons">Số lượng bài học <span style={{ color: 'red' }}>*</span></label>
-            <input
-              type="number"
-              id="lessons"
-              name="lessons"
-              value={formData.lessons}
-              onChange={handleChange}
-              required
-            />
-            {errors.lessons && <span className="error">{errors.lessons}</span>}
-          </div>
-
-          <div className="edit-course-input-group">
-            <label htmlFor="course-content">Nội dung <span style={{ color: 'red' }}>*</span></label>
+            <label htmlFor="course-content">
+              Nội dung <span style={{ color: "red" }}>*</span>
+            </label>
             <textarea
               id="course-content"
               name="description"
-              value={formData.description}
-              onChange={handleChange}
+              value={dataCourse?.description}
+              onChange={(e) => {
+                setDataCourse({ ...dataCourse, description: e.target.value });
+              }}
               required
             />
-            {errors.description && <span className="error">{errors.description}</span>}
+            {errors.description && (
+              <span className="error">{errors.description}</span>
+            )}
           </div>
         </div>
 
         <div className="section">
-          <h2>Mục tiêu <span style={{ color: 'red' }}>*</span></h2>
-          <div className="add-new" onClick={handleAddObjective}>
+          <h2>
+            Mục tiêu <span style={{ color: "red" }}>*</span>
+          </h2>
+          <div className="input-group">
+            <input
+              type="text"
+              placeholder="Nhập mục tiêu"
+              value={dataCourse?.learningOutcome}
+              onChange={(e) =>
+                setDataCourse({
+                  ...dataCourse,
+                  learningOutcome: e.target.value,
+                })
+              }
+            />
+          </div>
+          {errors.learningOutcome && (
+            <span className="error">{errors.learningOutcome}</span>
+          )}
+          {/* <div className="add-new" onClick={handleAddObjective}>
             <i className="fas fa-plus"></i> <span>Thêm mới</span>
           </div>
           {objectives.map((objective, index) => (
@@ -357,138 +508,295 @@ const EditCourse = () => {
                 value={objective}
                 onChange={(e) => handleObjectiveChange(index, e.target.value)}
               />
-              <button className="remove-btn" onClick={() => handleRemoveObjective(index)}>
+              <button
+                className="remove-btn"
+                onClick={() => handleRemoveObjective(index)}
+              >
                 <i className="fas fa-trash"></i>
               </button>
-              {errors[`objective${index}`] && <span className="error">{errors[`objective${index}`]}</span>}
+              {errors[`objective${index}`] && (
+                <span className="error">{errors[`objective${index}`]}</span>
+              )}
+            </div>
+          ))} */}
+        </div>
+
+        <div className="section">
+          <h2>
+            Nội dung khóa học <span style={{ color: "red" }}>*</span>
+          </h2>
+          <div
+            className="add-new"
+            onClick={() => {
+              setDataCourse({
+                ...dataCourse,
+                lessons: [
+                  ...dataCourse.lessons,
+                  {
+                    // lessonId: null,
+                    lessonCode: "",
+                    lessonName: "",
+                    videoLink: "",
+                    resourceLink: "",
+                  },
+                ],
+              });
+            }}
+          >
+            <i className="fas fa-plus"></i> <span>Thêm mới</span>
+          </div>
+          {dataCourse?.lessons?.map((course, index) => (
+            <div className="course-content" key={index}>
+              <div className="input-group">
+                <label>
+                  Thứ tự <span style={{ color: "red" }}>*</span>
+                </label>
+                <input
+                  type="number"
+                  placeholder="Nhập thứ tự"
+                  value={index + 1}
+                  disabled
+                  onChange={(e) =>
+                    handleLectureChange(index, "order", e.target.value)
+                  }
+                  min={1}
+                />
+                {errors[`lectureOrder${index}`] && (
+                  <span className="error">
+                    {errors[`lectureOrder${index}`]}
+                  </span>
+                )}
+              </div>
+
+              <div className="input-group">
+                <label>
+                  Tên bài giảng <span style={{ color: "red" }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Nhập tên bài giảng"
+                  value={course?.lessonName || ""}
+                  onChange={(e) => {
+                    const updatedLessons = [...dataCourse.lessons];
+                    updatedLessons[index] = {
+                      ...updatedLessons[index],
+                      lessonName: e.target.value,
+                    };
+                    setDataCourse({
+                      ...dataCourse,
+                      lessons: updatedLessons,
+                    });
+                  }}
+                  maxLength={100}
+                />
+              </div>
+
+              <div className="input-group">
+                <label>Chọn loại video</label>
+                <select
+                  value={course?.videoType || "url"}
+                  onChange={(e) => {
+                    const updatedLessons = [...dataCourse.lessons];
+                    updatedLessons[index] = {
+                      ...updatedLessons[index],
+                      videoType: e.target.value,
+                    };
+                    setDataCourse({
+                      ...dataCourse,
+                      lessons: updatedLessons,
+                    });
+                  }}
+                >
+                  <option value="url">Dán đường link video</option>
+                  <option value="file">Tải video lên</option>
+                </select>
+              </div>
+
+              {/* {course?.videoType == "url" ? ( */}
+              <div className="input-group">
+                <label>
+                  Video URL <span style={{ color: "red" }}>*</span>
+                </label>
+                <input
+                  type="url"
+                  placeholder="Nhập URL video"
+                  value={course?.videoLink}
+                  onChange={(e) => {
+                    const updatedLessons = [...dataCourse.lessons];
+                    updatedLessons[index] = {
+                      ...updatedLessons[index],
+                      videoLink: e.target.value,
+                    };
+                    setDataCourse({
+                      ...dataCourse,
+                      lessons: updatedLessons,
+                    });
+                  }}
+                />
+              </div>
+              {/* ) : (
+                <div className="input-group">
+                  <label>
+                    Tải lên video <span style={{ color: "red" }}>*</span>
+                  </label>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={(e) => handleFileUpload(index, e.target.files[0])}
+                  />
+                  {errors[`lectureVideo${index}`] && (
+                    <span className="error">
+                      {errors[`lectureVideo${index}`]}
+                    </span>
+                  )}
+                </div>
+              )} */}
+
+              <div className="input-group">
+                <label>
+                  Tài liệu <span style={{ color: "red" }}>*</span>
+                </label>
+                <input
+                  type="url"
+                  placeholder="Nhập URL tài liệu"
+                  value={course?.resourceLink}
+                  onChange={(e) => {
+                    const updatedLessons = [...dataCourse.lessons];
+                    updatedLessons[index] = {
+                      ...updatedLessons[index],
+                      resourceLink: e.target.value,
+                    };
+                    setDataCourse({
+                      ...dataCourse,
+                      lessons: updatedLessons,
+                    });
+                  }}
+                />
+                {errors[`lectureDocument${index}`] && (
+                  <span className="error">
+                    {errors[`lectureDocument${index}`]}
+                  </span>
+                )}
+              </div>
+
+              <div className="buttons">
+                <button
+                  className="cancel-btn"
+                  onClick={() => {
+                    const updatedLessons = dataCourse.lessons.filter(
+                      (_, i) => i !== index
+                    );
+                    setDataCourse({
+                      ...dataCourse,
+                      lessons: updatedLessons,
+                    });
+                  }}
+                >
+                  Xóa
+                </button>
+              </div>
             </div>
           ))}
         </div>
 
         <div className="section">
-          <h2>Nội dung khóa học <span style={{ color: 'red' }}>*</span></h2>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-            <div className="add-new" onClick={handleAddLecture}>
-              <i className="fas fa-plus"></i> <span>Thêm mới</span>
-            </div>
-            <button
-              className="sort-btn"
-              onClick={() => setIsSorting(!isSorting)}
-              style={{ marginLeft: '10px', padding: '5px 10px' }}
-            >
-              <i className="fas fa-sort"></i> Thứ tự
-            </button>
-          </div>
-          {errors.lectures && <span className="error">{errors.lectures}</span>}
-          <div>
-            {isSorting ? (
-              <>
-                {tempLectures.map((lecture, index) => (
-                  <LectureItem
-                    key={index}
-                    index={index}
-                    lecture={lecture}
-                    moveLecture={moveLecture}
-                    handleEditLecture={handleEditLecture}
-                    handleRemoveLecture={handleRemoveLecture}
-                  />
-                ))}
-                <div style={{ marginTop: '10px' }}>
-                  <button className="save-btn" onClick={handleSaveSort} style={{ marginRight: '10px' }}>
-                    Lưu
-                  </button>
-                  <button className="cancel-btn" onClick={handleCancelSort}>
-                    Hủy
-                  </button>
-                </div>
-              </>
-            ) : (
-              lectures.map((lecture, index) => (
-                <div
-                  key={index}
-                  className="lecture-item"
-                  style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}
-                >
-                  <span style={{ marginRight: '10px', width: '30px' }}>{index + 1}.</span>
-                  <span style={{ flex: 1 }}>{lecture.name || 'Bài học chưa có tên'}</span>
-                  <button onClick={() => handleEditLecture(index)} style={{ marginRight: '10px' }}>
-                    <i className="fas fa-edit"></i>
-                  </button>
-                  <button className="remove-btn" onClick={() => handleRemoveLecture(index)}>
-                    <i className="fas fa-trash"></i>
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        <div className="section">
-          <h2>Ảnh bìa <span style={{ color: 'red' }}>*</span></h2>
+          <h2>
+            Ảnh bìa <span style={{ color: "red" }}>*</span>
+          </h2>
           <div
             className="cover-image"
             style={{
-              backgroundImage: coverImage ? `url(${coverImage})` : 'none',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
+              backgroundImage: coverImage ? `url(${coverImage})` : "none",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
             }}
-            onClick={() => document.getElementById('cover-image-upload').click()}
+            onClick={() =>
+              document.getElementById("cover-image-upload").click()
+            }
           >
             {!coverImage && <i className="fas fa-plus upload-icon"></i>}
             <input
               type="file"
               accept="image/*"
-              style={{ display: 'none' }}
+              style={{ display: "none" }}
               id="cover-image-upload"
               onChange={handleCoverImageChange}
             />
           </div>
-          {errors.coverImage && <span className="error">{errors.coverImage}</span>}
+          <img src="http://localhost:8081/v1/api/registrations/uploads/signal_light.png" />
+          {errors.coverImage && (
+            <span className="error">{errors.coverImage}</span>
+          )}
         </div>
 
         <div className="learning-time-section">
           <h2>Thời gian học</h2>
           <div className="learning-time-row">
             <div className="learning-time-input">
-              <label>Ngày bắt đầu <span style={{ color: 'red' }}>*</span></label>
+              <label>
+                Ngày bắt đầu <span style={{ color: "red" }}>*</span>
+              </label>
               <input
                 type="date"
-                value={formData.startDate}
+                value={dataCourse?.startDate}
                 name="startDate"
-                onChange={handleChange}
+                onChange={(e) => {
+                  setDataCourse({ ...dataCourse, startDate: e.target.value });
+                }}
               />
-              {errors.startDate && <span className="learning-time-error">{errors.startDate}</span>}
+              {errors.startDate && (
+                <span className="learning-time-error">{errors.startDate}</span>
+              )}
             </div>
             <div className="learning-time-input">
-              <label>Ngày kết thúc <span style={{ color: 'red' }}>*</span></label>
+              <label>
+                Ngày kết thúc <span style={{ color: "red" }}>*</span>
+              </label>
               <input
                 type="date"
-                value={formData.endDate}
+                value={dataCourse?.endDate}
                 name="endDate"
-                onChange={handleChange}
+                onChange={(e) => {
+                  setDataCourse({ ...dataCourse, endDate: e.target.value });
+                }}
               />
-              {errors.endDate && <span className="learning-time-error">{errors.endDate}</span>}
+              {errors.endDate && (
+                <span className="learning-time-error">{errors.endDate}</span>
+              )}
             </div>
           </div>
 
-          <div className="select-instructor-group">
-            <h2>Chọn giảng viên <span style={{ color: 'red' }}>*</span></h2>
-            <button className="select-instructor-btn" onClick={handleOpenInstructorModal}>
-              {formData.instructor || 'Chọn giảng viên'}
-            </button>
-            {errors.instructor && <span className="error">{errors.instructor}</span>}
-          </div>
+          {isAdmin ? (
+            <div className="select-instructor-group">
+              <h2>
+                Chọn giảng viên <span style={{ color: "red" }}>*</span>
+              </h2>
+              <button
+                className="select-instructor-btn"
+                onClick={handleOpenInstructorModal}
+              >
+                {teacher?.name || "Chọn giảng viên"}
+              </button>
+              {errors.instructor && (
+                <span className="error">{errors.instructor}</span>
+              )}
+            </div>
+          ) : null}
         </div>
 
         <div className="footer-buttons">
-          <button className="create-btn" onClick={handleSave}>Cập nhật</button>
-          <button className="cancel-btn" onClick={handleCancel}>Hủy</button>
+          <button className="create-btn" onClick={handleSave}>
+            Cập nhật
+          </button>
+          <button className="cancel-btn" onClick={handleCancel}>
+            Hủy
+          </button>
         </div>
 
         <Modala
           show={showSuccessModal}
           title="Cập nhật khóa học thành công"
-          onConfirm={() => navigate('/course-management')}
+          onConfirm={() => navigate("/course-management")}
           onCancel={() => setShowSuccessModal(false)}
           modalClass="add-modal"
         />
@@ -496,7 +804,7 @@ const EditCourse = () => {
         <Modala
           show={showCancelModal}
           title="Bạn chắc chắn muốn hủy?"
-          onConfirm={() => navigate('/course-management')}
+          onConfirm={() => navigate("/course-management")}
           onCancel={() => setShowCancelModal(false)}
           modalClass="add-modal"
         />
@@ -549,7 +857,7 @@ const EditCourse = () => {
                         <input
                           type="radio"
                           name="instructor"
-                          checked={selectedInstructor?.id === instructor.id}
+                          checked={teacher?.id === instructor.id}
                           onChange={() => handleInstructorSelect(instructor)}
                         />
                       </td>
@@ -580,39 +888,51 @@ const EditCourse = () => {
           {currentLectureData && (
             <div className="lecture-edit-form">
               <div className="input-group">
-                <label>Tên bài giảng <span style={{ color: 'red' }}>*</span></label>
+                <label>
+                  Tên bài giảng <span style={{ color: "red" }}>*</span>
+                </label>
                 <input
                   type="text"
                   placeholder="Nhập tên bài giảng"
                   value={currentLectureData.name}
-                  onChange={(e) => handleLectureChange('name', e.target.value)}
+                  onChange={(e) => handleLectureChange("name", e.target.value)}
                 />
               </div>
 
               <div className="input-group">
-                <label>Chọn loại video <span style={{ color: 'red' }}>*</span></label>
+                <label>
+                  Chọn loại video <span style={{ color: "red" }}>*</span>
+                </label>
                 <select
-                  value={currentLectureData.videoType || 'url'}
-                  onChange={(e) => handleLectureChange('videoType', e.target.value)}
+                  value={currentLectureData.videoType || "url"}
+                  onChange={(e) =>
+                    handleLectureChange("videoType", e.target.value)
+                  }
                 >
                   <option value="url">Dán đường link video</option>
                   <option value="file">Tải video lên</option>
                 </select>
               </div>
 
-              {currentLectureData.videoType === 'url' ? (
+              {currentLectureData.videoType === "url" ? (
                 <div className="input-group">
-                  <label>Link video <span style={{ color: 'red' }}>*</span></label>
+                  <label>
+                    Link video <span style={{ color: "red" }}>*</span>
+                  </label>
                   <input
                     type="text"
                     placeholder="Nhập URL video"
                     value={currentLectureData.video}
-                    onChange={(e) => handleLectureChange('video', e.target.value)}
+                    onChange={(e) =>
+                      handleLectureChange("video", e.target.value)
+                    }
                   />
                 </div>
               ) : (
                 <div className="input-group">
-                  <label>Tải lên video <span style={{ color: 'red' }}>*</span></label>
+                  <label>
+                    Tải lên video <span style={{ color: "red" }}>*</span>
+                  </label>
                   <input
                     type="file"
                     accept="video/*"
@@ -622,12 +942,16 @@ const EditCourse = () => {
               )}
 
               <div className="input-group">
-                <label>Tài liệu <span style={{ color: 'red' }}>*</span></label>
+                <label>
+                  Tài liệu <span style={{ color: "red" }}>*</span>
+                </label>
                 <input
                   type="text"
                   placeholder="Nhập tài liệu"
                   value={currentLectureData.document}
-                  onChange={(e) => handleLectureChange('document', e.target.value)}
+                  onChange={(e) =>
+                    handleLectureChange("document", e.target.value)
+                  }
                 />
               </div>
             </div>

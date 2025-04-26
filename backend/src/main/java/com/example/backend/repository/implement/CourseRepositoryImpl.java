@@ -66,6 +66,9 @@ public class CourseRepositoryImpl implements CourseRepositoryCustom {
                 updateLessonInCourse(req.getCourseCode(), lesson);
             }
         }
+        if(req.getInstructorIds() != null){
+            updateInstructorToCourse(req.getInstructorIds(), course.getId());
+        }
 
         log.info("Khóa học {} đã được cập nhật thành công", req.getCourseCode());
     }
@@ -264,6 +267,25 @@ public class CourseRepositoryImpl implements CourseRepositoryCustom {
                 "SELECT u FROM User u WHERE u.id IN :instructorIds", User.class)
                 .setParameter("instructorIds", instructorIds)
                 .getResultList();
+    }
+
+    @Override
+    public void updateInstructorToCourse(String userCode, Long courseID) {
+        User user = entityManager.createQuery(
+                        "SELECT u FROM User u WHERE u.userCode = :userCode", User.class)
+                .setParameter("userCode", userCode)
+                .getSingleResult();
+
+        Instructor instructorEnrollment = entityManager.createQuery(
+                        "SELECT i FROM Instructor i WHERE i.course.id = :courseID", Instructor.class)
+                .setParameter("courseID", courseID)
+                .getSingleResult();
+
+        if (user == null || instructorEnrollment == null) {
+            throw new IllegalArgumentException("User hoặc InstructorEnrollment không tồn tại");
+        }
+        instructorEnrollment.setInstructor(user);
+        entityManager.merge(instructorEnrollment);
     }
 
 }

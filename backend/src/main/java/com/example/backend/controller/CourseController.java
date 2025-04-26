@@ -9,6 +9,7 @@ import com.example.backend.service.CourseService;
 import com.example.backend.dto.response.CourseDetailResp;
 import com.example.backend.dto.response.CourseFilterResp;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,43 +26,28 @@ import java.util.Map;
  */
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/v1/api/course")
 public class CourseController {
 
-    @Autowired
-    private CourseService courseService;
+    private final CourseService courseService;
 
-    /**
-     * Lọc danh sách khóa học theo nhiều tiêu chí, hỗ trợ phân trang.
-     * 
-     * Phương thức này cho phép người dùng lọc danh sách khóa học dựa trên các tiêu
-     * chí như tên khóa học,
-     * tên giảng viên, trạng thái, và người tạo. Đồng thời, phương thức cũng hỗ trợ
-     * phân trang kết quả.
-     * 
-     * @param courseName     tên khóa học (tùy chọn)
-     * @param instructorName tên giảng viên (tùy chọn)
-     * @param statusCode     mã trạng thái (tùy chọn)
-     * @param createdBy      người tạo (tùy chọn)
-     * @param pageNumber     trang hiện tại (mặc định là 0)
-     * @param pageSize       kích thước trang (mặc định là 5)
-     * @return ResponseEntity chứa danh sách khóa học phù hợp kèm thông tin phân
-     *         trang
-     */
     @GetMapping
     public ResponseEntity<?> filterCourses(
             @RequestParam(required = false) String courseName,
             @RequestParam(required = false) String instructorName,
+            @RequestParam(required = false) String instructorId,
             @RequestParam(required = false) String statusCode,
             @RequestParam(required = false) String createdBy,
             @RequestParam(required = false) LocalDate createdDate,
             @RequestParam(defaultValue = "0") int pageNumber,
-            @RequestParam(defaultValue = "5") int pageSize) {
+            @RequestParam(defaultValue = "0") int pageSize) {
         try {
             // Khởi tạo CourseFilterReq với các tham số từ request
             CourseFilterReq req = new CourseFilterReq();
             req.setCourseName(courseName);
             req.setInstructorName(instructorName);
+            req.setInstructorId(instructorId);
             req.setStatusCode(statusCode);
             req.setCreatedBy(createdBy);
             req.setCreatedDate(createdDate);
@@ -92,15 +78,6 @@ public class CourseController {
         }
     }
 
-    /**
-     * API hiển thị chi tiết khoá học theo ID.
-     * 
-     * Phương thức này trả về thông tin chi tiết về một khóa học cụ thể dựa trên ID
-     * khóa học.
-     * 
-     * @param courseId ID của khóa học cần lấy thông tin
-     * @return ResponseEntity chứa thông tin chi tiết khóa học
-     */
     @GetMapping("/detail")
     public ResponseEntity<?> getCourseDetail(@RequestParam Long courseId) {
         try {
@@ -125,16 +102,6 @@ public class CourseController {
         }
     }
 
-    /**
-     * Tạo mới một khóa học.
-     * 
-     * Phương thức này cho phép người dùng tạo mới một khóa học với các thông tin
-     * như tên khóa học,
-     * mô tả, giảng viên, và các thông tin liên quan khác.
-     * 
-     * @param req Thông tin khóa học cần tạo
-     * @return ResponseEntity chứa thông tin khóa học đã tạo
-     */
     @PostMapping
     public ResponseEntity<?> createCourse(@RequestBody CreateCourseReq req) {
         try {
@@ -159,17 +126,7 @@ public class CourseController {
         }
     }
 
-    /**
-     * API cập nhật thông tin khóa học.
-     * 
-     * Phương thức này cho phép chỉnh sửa thông tin của một khóa học đã tồn tại, bao
-     * gồm tên, mô tả,
-     * mục tiêu, ảnh bìa, ngày bắt đầu/kết thúc, số lượng bài giảng, trạng thái và
-     * danh sách bài học.
-     * 
-     * @param req đối tượng {@link UpdateCourseReq} chứa dữ liệu cần cập nhật
-     * @return ResponseEntity chứa thông tin phản hồi về kết quả cập nhật
-     */
+
     @PutMapping
     public ResponseEntity<?> updateCourse(@RequestBody UpdateCourseReq req) {
         try {
@@ -197,4 +154,5 @@ public class CourseController {
                     "body", Map.of("errorStatus", 903, "message", "Lỗi hệ thống, vui lòng thử lại sau")));
         }
     }
+
 }

@@ -61,7 +61,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/v1/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/v1/api/user").permitAll()
-                        .requestMatchers("/v1/api/user/**").hasRole("ADMIN")
+                        .requestMatchers("/v1/api/user/**").hasAnyRole("ADMIN")
                         .requestMatchers("/v1/api/course/**").hasAnyRole("ADMIN", "INSTRUCTOR", "STUDENT")
                         .requestMatchers("/v1/api/lesson/**").hasAnyRole("ADMIN", "INSTRUCTOR")
                         .requestMatchers("/v1/api/course/filter").hasAnyRole("INSTRUCTOR")

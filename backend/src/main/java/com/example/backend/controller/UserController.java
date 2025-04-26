@@ -7,6 +7,7 @@ import com.example.backend.service.UserService;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import com.example.backend.model.User;
 import java.util.Optional;
@@ -120,5 +121,11 @@ public class UserController {
             return ResponseEntity.status(500).body(errorResponse);
         }
     }
+
+    @GetMapping("/by-role")
+    public List<UserResp> getUsersByRole(@RequestParam Integer roleId) {
+        return userService.getUsersByRole(roleId);
+    }
+
 
 }

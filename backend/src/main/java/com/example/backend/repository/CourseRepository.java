@@ -76,36 +76,38 @@ public interface CourseRepository extends JpaRepository<Course, Long>, CourseRep
          * @param instructorName Tên giảng viên
          * @param createdDate    Ngày tạo khóa học
          * @param statusCode     Trạng thái khóa học
-         * @param createdBy      Người tạo khóa học
+         * @param instructorId      Người tạo khóa học
          * @param pageable       Phân trang kết quả
          * @return Một trang các khóa học thỏa mãn điều kiện tìm kiếm
          */
         @Query(value = """
-                        SELECT DISTINCT c.* FROM COURSE c
-                        LEFT JOIN INSTRUCTOR_ENROLLMENT ie ON c.ID = ie.COURSE_ID
-                        LEFT JOIN USER u ON ie.INSTRUCTOR_ID = u.ID
-                        WHERE (:courseName IS NULL OR c.COURSE_NAME LIKE CONCAT('%', :courseName, '%'))
-                          AND (:instructorName IS NULL OR u.NAME LIKE CONCAT('%', :instructorName, '%'))
-                          AND (:createdDate IS NULL OR DATE(c.CREATED_AT) = :createdDate)
-                          AND (:statusCode IS NULL OR c.STATUS_CODE = :statusCode)
-                          AND (:createdBy IS NULL OR c.CREATED_BY = :createdBy)
-                        """, countQuery = """
-                        SELECT COUNT(DISTINCT c.ID) FROM COURSE c
-                        LEFT JOIN INSTRUCTOR_ENROLLMENT ie ON c.ID = ie.COURSE_ID
-                        LEFT JOIN USER u ON ie.INSTRUCTOR_ID = u.ID
-                        WHERE (:courseName IS NULL OR c.COURSE_NAME LIKE CONCAT('%', :courseName, '%'))
-                          AND (:instructorName IS NULL OR u.NAME LIKE CONCAT('%', :instructorName, '%'))
-                          AND (:createdDate IS NULL OR DATE(c.CREATED_AT) = :createdDate)
-                          AND (:statusCode IS NULL OR c.STATUS_CODE = :statusCode)
-                          AND (:createdBy IS NULL OR c.CREATED_BY = :createdBy)
-                        """, nativeQuery = true)
+        SELECT DISTINCT c.* FROM COURSE c
+        LEFT JOIN INSTRUCTOR_ENROLLMENT ie ON c.ID = ie.COURSE_ID
+        LEFT JOIN USER u ON ie.INSTRUCTOR_ID = u.ID
+        WHERE (:courseName IS NULL OR c.COURSE_NAME LIKE CONCAT('%', :courseName, '%'))
+          AND (:instructorName IS NULL OR u.NAME LIKE CONCAT('%', :instructorName, '%'))
+          AND (:createdDate IS NULL OR DATE(c.CREATED_AT) = :createdDate)
+          AND (:statusCode IS NULL OR c.STATUS_CODE = :statusCode)
+          AND (:instructorId IS NULL OR ie.INSTRUCTOR_ID = :instructorId)
+        """,
+                countQuery = """
+        SELECT COUNT(DISTINCT c.ID) FROM COURSE c
+        LEFT JOIN INSTRUCTOR_ENROLLMENT ie ON c.ID = ie.COURSE_ID
+        LEFT JOIN USER u ON ie.INSTRUCTOR_ID = u.ID
+        WHERE (:courseName IS NULL OR c.COURSE_NAME LIKE CONCAT('%', :courseName, '%'))
+          AND (:instructorName IS NULL OR u.NAME LIKE CONCAT('%', :instructorName, '%'))
+          AND (:createdDate IS NULL OR DATE(c.CREATED_AT) = :createdDate)
+          AND (:statusCode IS NULL OR c.STATUS_CODE = :statusCode)
+          AND (:instructorId IS NULL OR ie.INSTRUCTOR_ID = :instructorId)
+        """,
+                nativeQuery = true)
         Page<Course> searchCoursesPaging(
-                        @Param("courseName") String courseName,
-                        @Param("instructorName") String instructorName,
-                        @Param("createdDate") LocalDate createdDate,
-                        @Param("statusCode") String statusCode,
-                        @Param("createdBy") String createdBy,
-                        Pageable pageable);
+                @Param("courseName") String courseName,
+                @Param("instructorName") String instructorName,
+                @Param("createdDate") LocalDate createdDate,
+                @Param("statusCode") String statusCode,
+                @Param("instructorId") Long instructorId,
+                Pageable pageable);
 
         /**
          * Tìm khóa học và trả về thông tin khóa học dưới dạng {@link CourseResp}.
