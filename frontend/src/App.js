@@ -165,7 +165,7 @@ function AppContent() {
             <div className="container">
               <Sidebar handleLogout={handleLogout} />
               <div className="content">
-                <Header title="Chi tiết khoas học" />
+                <Header title="Chi tiết khoá học" />
                 <CourseDetail />
               </div>
             </div>
