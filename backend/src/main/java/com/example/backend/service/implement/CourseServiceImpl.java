@@ -129,7 +129,7 @@ public class CourseServiceImpl implements CourseService {
         public Page<CourseResp> filterCourses(CourseFilterReq req) {
 //                Pageable pageable = PageRequest.of(req.getPageNumber(), req.getPageSize());
                 Pageable pageable;
-                if (req.getPageNumber() == 0 || req.getPageSize() == 0) {
+                if (req.getPageNumber() == 0 && req.getPageSize() == 0) {
                         pageable = Pageable.unpaged();
                 } else {
                         pageable = PageRequest.of(req.getPageNumber(), req.getPageSize());

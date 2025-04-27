@@ -55,8 +55,8 @@ const Login = ({ setIsAuthenticated }) => {
           console.log("➡️ Điều hướng đến /home");
           navigate("/home");
         } else if (data.role === "Lecturer" || data.role === "Giảng viên") {
-          console.log("➡️ Điều hướng đến /homeg");
-          navigate("/homeg");
+          console.log("➡️ Điều hướng đến /courses");
+          navigate("/courses");
         } else {
           console.log("➡️ Điều hướng đến /user-management");
           navigate("/user-management");

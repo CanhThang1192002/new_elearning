@@ -13,11 +13,14 @@ const CourseReactJS = () => {
     courseDateTime: {},
     instructorName: "",
     learnWhatYouGet: [],
+    learningOutcome: []
   });
 
   const [loading, setLoading] = useState(true);
   const [isRegistered, setIsRegistered] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
+  const [coverImage, setCoverImage] = useState();
+  const [listTarget, setListTarget] =  useState([]);
 
   const navigate = useNavigate();
 
@@ -25,6 +28,25 @@ const CourseReactJS = () => {
     fetchCourseData();
     checkRegisterCourse();
   }, []);
+
+  const fetchImage = async (imagename) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `http://localhost:8081/v1/api/registrations/uploads/${imagename}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          responseType: "blob",
+        }
+      );
+      const url = URL.createObjectURL(response.data);
+      return url;
+    } catch (err) {
+      return null;
+    }
+  };
 
   const fetchCourseData = async () => {
     try {
@@ -41,6 +63,11 @@ const CourseReactJS = () => {
       );
       if (response?.data?.body?.errorStatus == 901) {
         setCourseData(response?.data?.body?.data);
+        const path = await fetchImage(
+          response?.data?.body?.data?.backgroundImg.split("/").pop()
+        );
+        setCoverImage(path);
+        setListTarget( response?.data?.body?.data?.learningOutcome.split(","))
         setLoading(false);
       } else {
         toast.error(
@@ -140,10 +167,12 @@ const CourseReactJS = () => {
             {loading ? (
               <p>Đang tải nội dung...</p>
             ) : (
-              <div className="courseReactJS-item">
+              listTarget.map(item => (
+                <div className="courseReactJS-item">
                 <i className="fas fa-arrow-right"></i>
-                {courseData?.learningOutcome}
-              </div>
+                {item}
+              </div> 
+              ))
             )}
           </CListGroup>
         </div>
@@ -152,9 +181,9 @@ const CourseReactJS = () => {
           <div className="courseReactJS-video-wrapper">
             {loading ? (
               <p>Đang tải ảnh...</p>
-            ) : courseData.courseVideo ? (
+            ) : coverImage ? (
               <img
-                src={courseData?.backgroundImg}
+                src={coverImage}
                 alt="background"
                 style={{
                   width: "100%",

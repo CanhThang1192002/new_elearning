@@ -209,7 +209,7 @@ function AppContent() {
         />
 
         {/* Lecturer Routes */}
-        <Route
+        {/* <Route
           path="/homeg"
           element={
             <div className="container">
@@ -220,7 +220,7 @@ function AppContent() {
               </div>
             </div>
           }
-        />
+        /> */}
         <Route
           path="/courses"
           element={

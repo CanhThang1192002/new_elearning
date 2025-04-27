@@ -5,10 +5,9 @@ import com.example.backend.dto.response.CourseResp;
 import com.example.backend.dto.response.InstructorResp;
 import com.example.backend.dto.response.LessonResp;
 import com.example.backend.model.Course;
-import com.example.backend.model.RegisterCourse;
+import com.example.backend.model.Student;
 import com.example.backend.model.User;
 import com.example.backend.repository.CourseRepository;
-import com.example.backend.repository.RegisterCourseRepository;
 import com.example.backend.repository.UserRepository;
 import com.example.backend.service.RegisterCourseService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +16,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.backend.repository.StudentRepository;
 
 import java.util.List;
 
@@ -24,7 +24,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RegisterCourseServiceImpl implements RegisterCourseService {
 
-    private final RegisterCourseRepository registerCourseRepository;
+    private final StudentRepository studentRepository;
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
 
@@ -43,7 +43,7 @@ public class RegisterCourseServiceImpl implements RegisterCourseService {
                     .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại"));
             instructorId = user.getId();
         }
-        Page<Course> page = registerCourseRepository.findCoursesByStudentId(
+        Page<Course> page = studentRepository.findCoursesByStudentId(
                 req.getStudentId(),
                 pageable);
         return page.map(course -> {
@@ -83,16 +83,16 @@ public class RegisterCourseServiceImpl implements RegisterCourseService {
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khóa học với ID: " + request.getCourseId()));
 
             // Kiểm tra đã đăng ký chưa
-            if (registerCourseRepository.existsByStudentIdAndCourseId(student.getId(), course.getId())) {
+            if (studentRepository.existsByStudentIdAndCourseId(student.getId(), course.getId())) {
                 return false;
             }
 
             // Tạo bản ghi đăng ký mới
-            RegisterCourse registration = new RegisterCourse();
-            registration.setStudent(student);
-            registration.setCourse(course);
+            Student newStudent = new Student();
+            newStudent.setStudent(student);
+           newStudent.setCourse(course);
 
-            registerCourseRepository.save(registration);
+            studentRepository.save(newStudent);
 
             return true;
         } catch (Exception e) {
@@ -106,7 +106,7 @@ public class RegisterCourseServiceImpl implements RegisterCourseService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khóa học với ID: " + courseId));
         // Kiểm tra đã đăng ký chưa
-        if (registerCourseRepository.existsByStudentIdAndCourseId(student.getId(), course.getId())) {
+        if (studentRepository.existsByStudentIdAndCourseId(student.getId(), course.getId())) {
             return true;
         }
         return false;

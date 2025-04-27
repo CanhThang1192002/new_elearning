@@ -14,11 +14,11 @@ const Sidebars = ({ handleLogout }) => {
     <div className="sidebar">
       <h2>E LEARNING</h2>
       <ul>
-        <li>
+        {/* <li>
           <Link to="/homeg" className={getActivePage() === 'homeg' ? 'active' : ''}>
             <i className="fas fa-home"></i> Trang chủ
           </Link>
-        </li>
+        </li> */}
         <li>
           <Link to="/courses" className={getActivePage() === 'courses' ? 'active' : ''}>
             <i className="fas fa-book"></i> Danh sách khóa học

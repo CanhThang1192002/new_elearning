@@ -5,7 +5,6 @@ import com.example.backend.dto.request.RegisterCourseReq;
 import com.example.backend.dto.response.CourseFilterResp;
 import com.example.backend.dto.response.CourseResp;
 import com.example.backend.dto.response.PaginationResp;
-import com.example.backend.model.RegisterCourse;
 import com.example.backend.service.RegisterCourseService;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -31,7 +30,7 @@ import java.util.Map;
 @RequestMapping("/v1/api/registrations")
 public class RegisterCourseController {
     private final RegisterCourseService registerCourseService;
-    private static final String UPLOAD_DIR = System.getProperty("user.dir") + "/uploads/";
+    private static final String UPLOAD_DIR = "./e_learning/backend/uploads/";
 
     @GetMapping
     public ResponseEntity<?> filterCourses(

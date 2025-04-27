@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
- 
-const Signup = ({ setIsAuthenticated }) => {
+
+const Signup = () => {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
@@ -27,77 +27,229 @@ const Signup = ({ setIsAuthenticated }) => {
   const [addressError, setAddressError] = useState('');
   const [dobError, setDobError] = useState('');
   const [experienceError, setExperienceError] = useState('');
-  useEffect(() => {
-    // Trim userCode và chuẩn hóa chữ hoa/thường
-    const trimmedUserCode = userCode.trim().toLowerCase();
- 
-    // Kiểm tra tính hợp lệ của userCode
-    if (!trimmedUserCode || trimmedUserCode.length < 3 || !/^[a-zA-Z0-9]+$/.test(trimmedUserCode)) {
-      setUserCodeError('Tên đăng nhập phải từ 3 đến 20 ký tự, chỉ bao gồm chữ cái và số.');
-      return; // Nếu không hợp lệ, không kiểm tra tồn tại trong DB nữa
-    }
+  const [isCheckingUserCode, setIsCheckingUserCode] = useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [isCheckingPhone, setIsCheckingPhone] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
 
-    
-    const timeout = setTimeout(async () => {
-      try {
-        const res = await fetch('http://localhost:8081/v1/api/user', {
+  // Hàm lấy toàn bộ dữ liệu người dùng từ tất cả các trang
+  const fetchAllUsers = async () => {
+    let allUsers = [];
+    let page = 0;
+    let totalPages = 1;
+
+    try {
+      while (page < totalPages) {
+        const res = await fetch(`http://localhost:8081/v1/api/user?page=${page}&size=10`, {
           method: 'GET',
         });
-  
+
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
-  
+
         const json = await res.json();
-        const users = json.data;
-  
-        const userExists = users.some(
-          (user) => user.userCode.toLowerCase() === trimmedUserCode
-        );
-  
+        console.log(`Dữ liệu từ API (page ${page}):`, json);
+
+        if (json.errorStatus !== 900) {
+          throw new Error('API trả về lỗi: ' + json.message);
+        }
+
+        const users = json.data || [];
+        allUsers = [...allUsers, ...users];
+
+        totalPages = json.pagination.totalPages || 1;
+        page++;
+      }
+
+      console.log('Tất cả userCode:', allUsers.map(user => user.userCode).filter(Boolean));
+      console.log('Tất cả email:', allUsers.map(user => user.email).filter(Boolean));
+      console.log('Tất cả phone:', allUsers.map(user => user.phone).filter(Boolean));
+
+      return allUsers;
+    } catch (err) {
+      console.error('Lỗi khi lấy danh sách người dùng:', err);
+      throw err;
+    }
+  };
+
+  // Validation cho Tên đăng nhập
+  useEffect(() => {
+    const trimmedUserCode = userCode.trim().toLowerCase();
+
+    if (!trimmedUserCode) {
+      setUserCodeError('Tên đăng nhập là bắt buộc.');
+      setIsCheckingUserCode(false);
+      return;
+    }
+
+    if (trimmedUserCode.length < 3 || trimmedUserCode.length > 20 || !/^[a-zA-Z0-9]+$/.test(trimmedUserCode)) {
+      setUserCodeError('Tên đăng nhập phải từ 3 đến 20 ký tự, chỉ bao gồm chữ cái và số.');
+      setIsCheckingUserCode(false);
+      return;
+    }
+
+    setIsCheckingUserCode(true);
+    setIsChecking(true);
+
+    const timeout = setTimeout(async () => {
+      try {
+        const allUsers = await fetchAllUsers();
+
+        const userExists = allUsers.some(user => {
+          const userCodeValue = user.userCode ? user.userCode.toLowerCase().trim() : '';
+          return userCodeValue === trimmedUserCode;
+        });
+
         if (userExists) {
           setUserCodeError('Tên đăng nhập đã tồn tại.');
         } else {
           setUserCodeError('');
         }
       } catch (err) {
-        console.error('Lỗi khi lấy danh sách người dùng:', err);
-        setUserCodeError('Không thể kiểm tra tên đăng nhập.');
+        console.error('Lỗi khi kiểm tra tên đăng nhập:', err);
+        setUserCodeError('Không thể kiểm tra tên đăng nhập. Vui lòng thử lại.');
+      } finally {
+        setIsCheckingUserCode(false);
+        setIsChecking(false);
       }
-    }, 500);
- 
-    return () => clearTimeout(timeout); // Dọn dẹp timeout khi effect thay đổi
+    }, 300);
+
+    return () => clearTimeout(timeout);
   }, [userCode]);
- 
- 
- 
- 
-  const navigate = useNavigate();
- 
-  const availableCertificates = [
-    "AWS", "OCPJP", "Azure", "GCP", "CCNA", "PMP", "ITIL", "CISSP", "CEH", "CompTIA"
-  ];
- 
-  const cleanString = (str) => {
-    return str.replace(/[^\x20-\x7E]/g, '').trim();
-  };
- 
- 
+
+  // Validation cho Địa chỉ email
+  useEffect(() => {
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail) {
+      setEmailError('Email là bắt buộc.');
+      setIsCheckingEmail(false);
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setEmailError('Email không hợp lệ.');
+      setIsCheckingEmail(false);
+      return;
+    }
+
+    setIsCheckingEmail(true);
+    setIsChecking(true);
+
+    const timeout = setTimeout(async () => {
+      try {
+        const allUsers = await fetchAllUsers();
+
+        const emailExists = allUsers.some(user => {
+          const emailValue = user.email ? user.email.toLowerCase().trim() : '';
+          return emailValue === trimmedEmail;
+        });
+
+        if (emailExists) {
+          setEmailError('Email đã được sử dụng.');
+        } else {
+          setEmailError('');
+        }
+      } catch (err) {
+        console.error('Lỗi khi kiểm tra email:', err);
+        setEmailError('Không thể kiểm tra email.');
+      } finally {
+        setIsCheckingEmail(false);
+        setIsChecking(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [email]);
+
+  // Validation cho Số điện thoại
+  useEffect(() => {
+    const trimmedPhone = phone.trim();
+    if (!trimmedPhone) {
+      setPhoneError('Số điện thoại là bắt buộc.');
+      setIsCheckingPhone(false);
+      return;
+    }
+    if (!/^\d{9,11}$/.test(trimmedPhone)) {
+      setPhoneError('Số điện thoại phải từ 9 đến 11 chữ số.');
+      setIsCheckingPhone(false);
+      return;
+    }
+
+    setIsCheckingPhone(true);
+    setIsChecking(true);
+
+    const timeout = setTimeout(async () => {
+      try {
+        const allUsers = await fetchAllUsers();
+
+        const phoneExists = allUsers.some(user => {
+          const phoneValue = user.phone ? user.phone.trim() : '';
+          return phoneValue === trimmedPhone;
+        });
+
+        if (phoneExists) {
+          setPhoneError('Số điện thoại đã được sử dụng.');
+        } else {
+          setPhoneError('');
+        }
+      } catch (err) {
+        console.error('Lỗi khi kiểm tra số điện thoại:', err);
+        setPhoneError('Không thể kiểm tra số điện thoại.');
+      } finally {
+        setIsCheckingPhone(false);
+        setIsChecking(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [phone]);
+
+  // Validation cho Họ và tên
+  useEffect(() => {
+    if (name) {
+      const trimmedName = name.trim();
+      if (!/^[a-zA-Z\sÀ-ỹ]+$/.test(trimmedName)) {
+        setNameError('Họ và tên chỉ được chứa chữ cái và khoảng trắng.');
+      } else if (trimmedName.length < 2 || trimmedName.length > 50) {
+        setNameError('Họ và tên phải từ 2 đến 50 ký tự.');
+      } else {
+        setNameError('');
+      }
+    } else {
+      setNameError('Họ và tên là bắt buộc.');
+    }
+  }, [name]);
+
+  // Validation cho Mật khẩu
   useEffect(() => {
     const cleanedPassword = cleanString(password);
     const cleanedConfirmPassword = cleanString(confirmPassword);
- 
+
     if (password && confirmPassword) {
       if (cleanedPassword !== cleanedConfirmPassword) {
         setPasswordError('Mật khẩu xác nhận không khớp.');
       } else {
         setPasswordError('');
       }
+    } else if (!password) {
+      setPasswordError('Mật khẩu là bắt buộc.');
+    } else if (!confirmPassword) {
+      setPasswordError('Nhập lại mật khẩu là bắt buộc.');
     } else {
       setPasswordError('');
     }
   }, [password, confirmPassword]);
- 
+
+  const navigate = useNavigate();
+
+  const availableCertificates = [
+    "AWS", "OCPJP", "Azure", "GCP", "CCNA", "PMP", "ITIL", "CISSP", "CEH", "CompTIA"
+  ];
+
+  const cleanString = (str) => {
+    return str.replace(/[^\x20-\x7E]/g, '').trim();
+  };
+
   const handleRoleChange = (event) => {
     setRole(event.target.value);
     if (event.target.value === "Học viên") {
@@ -106,58 +258,65 @@ const Signup = ({ setIsAuthenticated }) => {
       setExperienceError('');
     }
   };
- 
+
   const handleDateChange = (event) => {
     setDob(event.target.value);
   };
- 
+
   const handleExperienceChange = (event) => {
     setExperience(event.target.value);
   };
- 
+
   const addCertificate = (certificate) => {
     if (certificate && selectedCertificates.length < 10 && !selectedCertificates.includes(certificate)) {
       setSelectedCertificates([...selectedCertificates, certificate]);
     }
   };
- 
+
   const removeCertificate = (certificate) => {
     setSelectedCertificates(selectedCertificates.filter((item) => item !== certificate));
   };
- 
+
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
   const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
- 
+
   const validateInputs = () => {
     let isValid = true;
- 
-    // Reset tất cả lỗi trước khi validate
-    setUserCodeError('');
-    setPasswordError('');
-    setNameError('');
-    setEmailError('');
-    setPhoneError('');
+
+    if (isChecking) {
+      toast.error('Vui lòng đợi kiểm tra hoàn tất.');
+      return false;
+    }
+
     setAddressError('');
     setDobError('');
     setExperienceError('');
- 
-    // Validate userCode
-    /*if (!userCode) {
-      setUserCodeError('Tên đăng nhập là bắt buộc.');
-      toast.error('Tên đăng nhập là bắt buộc.');
+
+    if (userCodeError) {
+      toast.error(userCodeError);
       isValid = false;
-    } else if (!/^[a-zA-Z0-9]+$/.test(userCode)) {
-      setUserCodeError('Tên đăng nhập chỉ được chứa chữ cái và số.');
-      toast.error('Tên đăng nhập chỉ được chứa chữ cái và số.');
+    }
+
+    if (passwordError) {
+      toast.error(passwordError);
       isValid = false;
-    } else if (userCode.length < 3 || userCode.length > 20) {
-      setUserCodeError('Tên đăng nhập phải từ 3 đến 20 ký tự.');
-      toast.error('Tên đăng nhập phải từ 3 đến 20 ký tự.');
+    }
+
+    if (nameError) {
+      toast.error(nameError);
       isValid = false;
-    }*/
-   
- 
-    // Validate password
+    }
+
+    if (emailError) {
+      toast.error(emailError);
+      isValid = false;
+    }
+
+    if (phoneError) {
+      toast.error(phoneError);
+      isValid = false;
+    }
+
     const cleanedPassword = cleanString(password);
     const cleanedConfirmPassword = cleanString(confirmPassword);
     if (!cleanedPassword) {
@@ -169,72 +328,22 @@ const Signup = ({ setIsAuthenticated }) => {
       const hasLowerCase = /[a-z]/.test(cleanedPassword);
       const hasDigit = /\d/.test(cleanedPassword);
       const hasSpecialChar = /[^a-zA-Z0-9]/.test(cleanedPassword);
-      if (cleanedPassword.length < 12 || !hasUpperCase || !hasLowerCase || !hasDigit || !hasSpecialChar) {
+      if (cleanedPassword.length < 5 || !hasUpperCase || !hasLowerCase || !hasDigit || !hasSpecialChar) {
         setPasswordError('Mật khẩu phải có ít nhất 12 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.');
         toast.error('Mật khẩu phải có ít nhất 12 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.');
         isValid = false;
       }
     }
- 
-    // Validate confirmPassword
-    if (!cleanedConfirmPassword) {
-      setPasswordError('Nhập lại mật khẩu là bắt buộc.');
-      toast.error('Nhập lại mật khẩu là bắt buộc.');
-      isValid = false;
-    } else if (cleanedPassword !== cleanedConfirmPassword) {
-      setPasswordError('Mật khẩu xác nhận không khớp.');
-      toast.error('Mật khẩu xác nhận không khớp.');
-      isValid = false;
-    }
- 
-    // Validate name
-    if (!name) {
-      setNameError('Họ và tên là bắt buộc.');
-      toast.error('Họ và tên là bắt buộc.');
-      isValid = false;
-    } else if (!/^[a-zA-Z\sÀ-ỹ]+$/.test(name)) {
-      setNameError('Họ và tên chỉ được chứa chữ cái và khoảng trắng.');
-      toast.error('Họ và tên chỉ được chứa chữ cái và khoảng trắng.');
-      isValid = false;
-    } else if (name.length < 2 || name.length > 50) {
-      setNameError('Họ và tên phải từ 2 đến 50 ký tự.');
-      toast.error('Họ và tên phải từ 2 đến 50 ký tự.');
-      isValid = false;
-    }
- 
-    // Validate email
-    if (!email) {
-      setEmailError('Email là bắt buộc.');
-      toast.error('Email là bắt buộc.');
-      isValid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setEmailError('Email không hợp lệ.');
-      toast.error('Email không hợp lệ.');
-      isValid = false;
-    }
- 
-    // Validate phone
-    if (!phone) {
-      setPhoneError('Số điện thoại là bắt buộc.');
-      toast.error('Số điện thoại là bắt buộc.');
-      isValid = false;
-    } else if (!/^\d{9,11}$/.test(phone)) {
-      setPhoneError('Số điện thoại phải từ 9 đến 11 chữ số.');
-      toast.error('Số điện thoại phải từ 9 đến 11 chữ số.');
-      isValid = false;
-    }
- 
-    // Validate address (nếu có)
+
     if (address && address.length > 255) {
       setAddressError('Địa chỉ không được dài quá 255 ký tự.');
       toast.error('Địa chỉ không được dài quá 255 ký tự.');
       isValid = false;
     }
- 
-    // Validate dob (nếu có)
+
     if (dob) {
       const birthDate = new Date(dob);
-      const currentDate = new Date('2025-04-14'); // Ngày hiện tại
+      const currentDate = new Date('2025-04-14');
       const age = currentDate.getFullYear() - birthDate.getFullYear();
       const monthDiff = currentDate.getMonth() - birthDate.getMonth();
       const dayDiff = currentDate.getDate() - birthDate.getDate();
@@ -252,8 +361,7 @@ const Signup = ({ setIsAuthenticated }) => {
         isValid = false;
       }
     }
- 
-    // Validate experience (nếu role là Giảng viên và có nhập)
+
     if (role === "Giảng viên" && experience) {
       const expValue = parseInt(experience);
       if (isNaN(expValue) || expValue < 1 || expValue > 20) {
@@ -262,20 +370,25 @@ const Signup = ({ setIsAuthenticated }) => {
         isValid = false;
       }
     }
- 
+
     return isValid;
   };
- 
+
   const handleSignup = async () => {
     if (!validateInputs()) return;
+
+    if (isLoading) {
+      toast.info('Đang xử lý, vui lòng đợi...');
+      return;
+    }
+
     setIsLoading(true);
-  
-    // Tạo payload cho đăng ký
+
     const roleId = role === "Học viên" ? 3 : 2;
     const genderValue = gender === "Nam" ? 1 : 0;
     const cleanedPassword = cleanString(password);
     const cleanedConfirmPassword = cleanString(confirmPassword);
-  
+
     const payload = {
       userCode: userCode.trim(),
       name,
@@ -292,7 +405,7 @@ const Signup = ({ setIsAuthenticated }) => {
       gender: genderValue,
       createdBy: "SYSTEM"
     };
-  
+
     try {
       const response = await fetch('http://localhost:8081/v1/api/auth/register', {
         method: 'POST',
@@ -301,36 +414,42 @@ const Signup = ({ setIsAuthenticated }) => {
         },
         body: JSON.stringify(payload),
       });
-  
+
       console.log('Response status:', response.status);
       console.log('Response headers:', response.headers);
-  
+
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         throw new Error('Response không phải JSON hợp lệ');
       }
-  
+
       const data = await response.json();
       console.log('Response data:', data);
-  
+
       if ((response.status === 201 || response.status === 200) && data.errorStatus === 900) {
-        // Lưu thông tin role vào localStorage
         localStorage.setItem('role', roleId === 3 ? 'Học viên' : 'Giảng viên');
-        setIsAuthenticated(true);
         toast.success('Đăng ký thành công!', {
           onClose: () => navigate(roleId === 2 ? '/admin' : '/dashboard'),
         });
       } else {
         let errorMessage = 'Đăng ký thất bại. Vui lòng kiểm tra thông tin.';
-        // Xử lý các lỗi dựa trên errorStatus từ API
         if (data.errorStatus === 901) {
           errorMessage = 'Email hoặc tên đăng nhập đã tồn tại.';
+          if (data.message.includes('userCode')) {
+            setUserCodeError('Tên đăng nhập đã tồn tại.');
+          } else if (data.message.includes('email')) {
+            setEmailError('Email đã được sử dụng.');
+          } else if (data.message.includes('phone')) {
+            setPhoneError('Số điện thoại đã được sử dụng.');
+          }
         } else if (data.errorStatus === 902) {
           errorMessage = 'Lỗi hệ thống, vui lòng thử lại sau.';
         } else if (data.errorStatus === 905) {
           errorMessage = 'Mật khẩu xác nhận không khớp.';
+          setPasswordError(errorMessage);
         } else if (data.errorStatus === 906) {
           errorMessage = 'Mật khẩu không đủ mạnh. Mật khẩu phải có ít nhất 12 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.';
+          setPasswordError(errorMessage);
         } else {
           errorMessage = data.message || errorMessage;
         }
@@ -345,7 +464,7 @@ const Signup = ({ setIsAuthenticated }) => {
       setIsLoading(false);
     }
   };
-  
+
   const styles = {
     signupBgMain: { backgroundColor: 'white' },
     signupHeader: {  
@@ -406,7 +525,7 @@ const Signup = ({ setIsAuthenticated }) => {
     signupFormLabel: { width: '160px', fontWeight: 'bold', textAlign: 'left', marginRight: '15px' },  
     signupConditionalField: { marginLeft: '175px' },  
     signupFormInput: { flex: 1, padding: '12px', border: '1px solid #a8cbff', borderRadius: '4px', boxSizing: 'border-box' },  
-    signupFormInputPhone: { flex: 1, padding: '12px', border: '1px solid #a8cbff', borderRadius: '4px', boxSizing: 'border-box' },  
+    signupFormInputPhone: { flex: '1', padding: '12px', border: '1px solid #a8cbff', borderRadius: '4px', boxSizing: 'border-box' },  
     signupFormSelect: { flex: 1, padding: '12px', border: '1px solid #a8cbff', borderRadius: '4px', boxSizing: 'border-box' },  
     signupFormPhone: { display: 'flex', gap: '10px', minHeight: '48px' },  
     signupFormPassword: { position: 'relative', flex: '1' },  
@@ -431,7 +550,9 @@ const Signup = ({ setIsAuthenticated }) => {
     signupRemoveCertificateButton: { marginLeft: '8px', padding: '4px 8px', backgroundColor: '#dc3545', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer', transition: 'background-color 0.3s ease' },
     errorText: { color: 'red', fontSize: '12px', marginTop: '5px', marginLeft: '175px' },
   };
- 
+
+  const hasErrors = !!userCodeError || !!passwordError || !!nameError || !!emailError || !!phoneError || !!addressError || !!dobError || !!experienceError;
+
   return (
     <div style={styles.signupBgMain}>
       <ToastContainer />
@@ -446,7 +567,7 @@ const Signup = ({ setIsAuthenticated }) => {
           </nav>
         </div>
       </header>
- 
+
       <main style={styles.signupFormContainer}>
         <div style={styles.signupButtonContainer}>
           <Link to="/login">
@@ -456,9 +577,8 @@ const Signup = ({ setIsAuthenticated }) => {
             <button style={styles.signupRegisterButton}>Đăng ký</button>
           </Link>
         </div>
- 
+
         <div style={styles.signupFormFields}>
-          {/* 1. userCode */}
           <div style={styles.signupFormGroup}>
             <label htmlFor="userCode" style={styles.signupFormLabel}>
               Tên đăng nhập <span style={{ color: 'red' }}>*</span>:
@@ -473,9 +593,9 @@ const Signup = ({ setIsAuthenticated }) => {
               required
             />
           </div>
-          {userCodeError && <div style={styles.errorText}>{userCodeError}</div>}
- 
-          {/* 2. password */}
+          {isCheckingUserCode && <div style={styles.errorText}>Đang kiểm tra...</div>}
+          {userCodeError && !isCheckingUserCode && <div style={styles.errorText}>{userCodeError}</div>}
+
           <div style={styles.signupFormGroup}>
             <label htmlFor="password" style={styles.signupFormLabel}>
               Mật khẩu <span style={{ color: 'red' }}>*</span>:
@@ -497,8 +617,7 @@ const Signup = ({ setIsAuthenticated }) => {
               ></i>
             </div>
           </div>
- 
-          {/* 3. confirmPassword */}
+
           <div style={styles.signupFormGroup}>
             <label htmlFor="confirm-password" style={styles.signupFormLabel}>
               Nhập lại mật khẩu <span style={{ color: 'red' }}>*</span>:
@@ -521,8 +640,7 @@ const Signup = ({ setIsAuthenticated }) => {
             </div>
           </div>
           {passwordError && <div style={styles.errorText}>{passwordError}</div>}
- 
-          {/* 4. name */}
+
           <div style={styles.signupFormGroup}>
             <label htmlFor="name" style={styles.signupFormLabel}>
               Họ và tên <span style={{ color: 'red' }}>*</span>:
@@ -538,8 +656,7 @@ const Signup = ({ setIsAuthenticated }) => {
             />
           </div>
           {nameError && <div style={styles.errorText}>{nameError}</div>}
- 
-          {/* 5. email */}
+
           <div style={styles.signupFormGroup}>
             <label htmlFor="email" style={styles.signupFormLabel}>
               Địa chỉ email <span style={{ color: 'red' }}>*</span>:
@@ -554,9 +671,9 @@ const Signup = ({ setIsAuthenticated }) => {
               required
             />
           </div>
-          {emailError && <div style={styles.errorText}>{emailError}</div>}
- 
-          {/* 6. phone */}
+          {isCheckingEmail && <div style={styles.errorText}>Đang kiểm tra...</div>}
+          {emailError && !isCheckingEmail && <div style={styles.errorText}>{emailError}</div>}
+
           <div style={styles.signupFormGroup}>
             <label htmlFor="phone" style={styles.signupFormLabel}>
               Số điện thoại <span style={{ color: 'red' }}>*</span>:
@@ -583,9 +700,9 @@ const Signup = ({ setIsAuthenticated }) => {
               />
             </div>
           </div>
-          {phoneError && <div style={styles.errorText}>{phoneError}</div>}
- 
-          {/* 7. address */}
+          {isCheckingPhone && <div style={styles.errorText}>Đang kiểm tra...</div>}
+          {phoneError && !isCheckingPhone && <div style={styles.errorText}>{phoneError}</div>}
+
           <div style={styles.signupFormGroup}>
             <label htmlFor="address" style={styles.signupFormLabel}>Địa chỉ:</label>
             <input
@@ -598,8 +715,7 @@ const Signup = ({ setIsAuthenticated }) => {
             />
           </div>
           {addressError && <div style={styles.errorText}>{addressError}</div>}
- 
-          {/* 8. dateOfBirth */}
+
           <div style={styles.signupFormGroup}>
             <label htmlFor="dob" style={styles.signupFormLabel}>Ngày sinh:</label>
             <input
@@ -611,8 +727,7 @@ const Signup = ({ setIsAuthenticated }) => {
             />
           </div>
           {dobError && <div style={styles.errorText}>{dobError}</div>}
- 
-          {/* 9. role */}
+
           <div style={styles.signupFormGroup}>
             <label style={styles.signupFormLabel}>
               Quyền đăng ký <span style={{ color: 'red' }}>*</span>:
@@ -638,8 +753,7 @@ const Signup = ({ setIsAuthenticated }) => {
               </label>
             </div>
           </div>
- 
-          {/* 10. experience (nếu role là Giảng viên) */}
+
           {role === "Giảng viên" && (
             <div style={{ ...styles.signupFormGroup, ...styles.signupConditionalField }}>
               <label htmlFor="experience" style={styles.signupFormLabel}>Năm kinh nghiệm:</label>
@@ -660,8 +774,7 @@ const Signup = ({ setIsAuthenticated }) => {
             </div>
           )}
           {experienceError && <div style={styles.errorText}>{experienceError}</div>}
- 
-          {/* 11. certification (nếu role là Giảng viên) */}
+
           {role === "Giảng viên" && (
             <div style={{ ...styles.signupFormGroup, ...styles.signupConditionalField }}>
               <label htmlFor="certificate" style={styles.signupFormLabel}>Chứng chỉ:</label>
@@ -693,8 +806,7 @@ const Signup = ({ setIsAuthenticated }) => {
               </div>
             </div>
           )}
- 
-          {/* 12. gender */}
+
           <div style={styles.signupFormGroup}>
             <label style={styles.signupFormLabel}>Giới tính:</label>
             <div style={styles.signupFormRadioGroup}>
@@ -718,15 +830,14 @@ const Signup = ({ setIsAuthenticated }) => {
               </label>
             </div>
           </div>
- 
+
           <div style={styles.signupFormFooter}>
             <button
               type="button"
               style={styles.signupFormSubmitBtn}
               onClick={handleSignup}
-              disabled={isLoading || userCodeError || passwordError || nameError || emailError || phoneError || addressError || dobError || experienceError}
+              disabled={isLoading || isChecking || hasErrors}
             >
-
               {isLoading ? 'Đang xử lý...' : 'Đăng ký'}
             </button>
           </div>
@@ -735,5 +846,5 @@ const Signup = ({ setIsAuthenticated }) => {
     </div>
   );
 };
- 
+
 export default Signup;

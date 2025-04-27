@@ -149,15 +149,11 @@ const EditCourse = ({ isAdmin }) => {
         const litCourse = { ...response?.data?.body?.data, lesson: listLesson };
         setDataCourse(litCourse);
         setTeacher(litCourse?.instructors[0]);
-        // const parts = litCourse?.backgroundImg.split("/");
-        // const uploadsIndex = parts.lastIndexOf("uploads");
-        // const desiredPath = "/" + parts.slice(uploadsIndex).join("/");
-        // console.log("ảnh", `http://localhost:8081${desiredPath}`);
-        // setCoverImage(`http://localhost:8081`);
         const parts = await fetchImage(
           litCourse?.backgroundImg.split("/").pop()
         );
         setCoverImage(parts);
+        setObjectives(litCourse?.learningOutcome.split(","))
       } else {
         toast.error(response?.data?.body?.message || "Lỗi không xác định");
       }
@@ -403,7 +399,7 @@ const EditCourse = ({ isAdmin }) => {
         if (response?.data?.body?.errorStatus == 901) {
           toast.success("Cập nhật thành công");
           if (isAdmin) navigate("/course-management");
-          else navigate("/course");
+          else navigate("/courses");
         } else {
           toast.error(response?.data?.body?.message || "Lỗi không xác định");
         }
@@ -504,23 +500,7 @@ const EditCourse = ({ isAdmin }) => {
           <h2>
             Mục tiêu <span style={{ color: "red" }}>*</span>
           </h2>
-          <div className="input-group">
-            <input
-              type="text"
-              placeholder="Nhập mục tiêu"
-              value={dataCourse?.learningOutcome}
-              onChange={(e) =>
-                setDataCourse({
-                  ...dataCourse,
-                  learningOutcome: e.target.value,
-                })
-              }
-            />
-          </div>
-          {errors.learningOutcome && (
-            <span className="error">{errors.learningOutcome}</span>
-          )}
-          {/* <div className="add-new" onClick={handleAddObjective}>
+          <div className="add-new" onClick={handleAddObjective}>
             <i className="fas fa-plus"></i> <span>Thêm mới</span>
           </div>
           {objectives.map((objective, index) => (
@@ -541,7 +521,7 @@ const EditCourse = ({ isAdmin }) => {
                 <span className="error">{errors[`objective${index}`]}</span>
               )}
             </div>
-          ))} */}
+          ))}
         </div>
 
         <div className="section">

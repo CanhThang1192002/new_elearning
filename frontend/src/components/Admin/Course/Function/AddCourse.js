@@ -443,19 +443,7 @@ const AddCourse = ({ isAdmin }) => {
         <h2>
           Mục tiêu <span style={{ color: "red" }}>*</span>
         </h2>
-        <div className="input-group">
-          <input
-            type="text"
-            placeholder="Nhập mục tiêu"
-            value={objectives[0]}
-            onChange={(e) => handleObjectiveChange(0, e.target.value)}
-            maxLength={200}
-          />
-          {errors[`objective${0}`] && (
-            <span className="error">{errors[`objective${0}`]}</span>
-          )}
-        </div>
-        {/* <div className="add-new" onClick={handleAddObjective}>
+        <div className="add-new" onClick={handleAddObjective}>
           <i className="fas fa-plus"></i> <span>Thêm mới</span>
         </div>
         {objectives.map((objective, index) => (
@@ -477,7 +465,7 @@ const AddCourse = ({ isAdmin }) => {
               <span className="error">{errors[`objective${index}`]}</span>
             )}
           </div>
-        ))} */}
+        ))}
       </div>
 
       <div className="section">

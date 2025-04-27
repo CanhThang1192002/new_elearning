@@ -14,7 +14,7 @@ const Sidebar = () => {
       <h2>E LEARNING</h2>
       <ul>
         <li>
-          <a href="/" className={getActivePage() === 'home' ? 'active' : ''}>
+          <a href="/home" className={getActivePage() === 'home' ? 'active' : ''}>
             <i className="fas fa-home"></i> Trang chủ
           </a>
         </li>
