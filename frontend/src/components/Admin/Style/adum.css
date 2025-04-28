@@ -333,6 +333,7 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
+  width: "100%";
 }
 
 /* === Full-width grid item for phone input === */
@@ -432,7 +433,7 @@
   background-repeat: no-repeat;
   background-position: right 0.4rem center;
   background-size: 0.9rem; /* Slightly smaller arrow */
-  padding: 0.4rem; /* Reduced padding */
+  padding: 0.1rem; /* Reduced padding */
   font-size: 0.85rem; /* Slightly smaller font */
 }
 

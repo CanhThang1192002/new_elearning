@@ -1,6 +1,7 @@
 // File: components/UserManagement/Function/Edit.jsx
 import React from "react";
 import "../../Style/adum.css";
+import { toast } from "react-toastify";
 
 const EditUserModal = ({
   formData,
@@ -89,6 +90,7 @@ const EditUserModal = ({
                     onChange={(e) =>
                       setFormData({ ...formData, gender: e.target.value })
                     }
+                    style={{ width: "50px" }}
                   />{" "}
                   Nam
                 </label>
@@ -101,6 +103,7 @@ const EditUserModal = ({
                     onChange={(e) =>
                       setFormData({ ...formData, gender: e.target.value })
                     }
+                    style={{ width: "50px" }}
                   />{" "}
                   Nữ
                 </label>
@@ -161,6 +164,7 @@ const EditUserModal = ({
                 onChange={(e) =>
                   setFormData({ ...formData, role: e.target.value })
                 }
+                style={{ border: "1px solid #d1d5db" }}
               >
                 <option value="Học viên">Học viên</option>
                 <option value="Giảng viên">Giảng viên</option>
@@ -171,11 +175,17 @@ const EditUserModal = ({
             {/* Số điện thoại */}
             <div className="modal-grid-item">
               <label className="field-label">Số điện thoại:</label>
-              <div className="phone-input-group">
+              <div style={{ display: "flex", gap: "8px" }}>
                 <select
-                  className="phone-code-select"
+                  style={{
+                    height: "40px",
+                    flex: "1",
+                    padding: "0 8px",
+                    fontSize: "16px",
+                    border: "1px solid #d1d5db",
+                  }}
                   name="phoneCode"
-                  value={formData.phoneCode}
+                  value={formData.phoneCode || "+84"}
                   onChange={(e) =>
                     setFormData({ ...formData, phoneCode: e.target.value })
                   }
@@ -190,11 +200,17 @@ const EditUserModal = ({
                   <option value="+33">+33</option>
                   <option value="+91">+91</option>
                 </select>
+
                 <input
                   type="tel"
-                  className="phone-number-input"
                   name="phone"
-                  value={formData.phone}
+                  style={{
+                    height: "40px",
+                    flex: "3",
+                    padding: "0 8px",
+                    fontSize: "16px",
+                  }}
+                  value={formData.phone || ""}
                   onChange={(e) =>
                     setFormData({ ...formData, phone: e.target.value })
                   }

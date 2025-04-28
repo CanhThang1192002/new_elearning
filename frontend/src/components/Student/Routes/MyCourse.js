@@ -285,11 +285,13 @@ const MyCourse = () => {
                 }}
                 key={index}
                 className="mycourse-course-card"
+                style={{ height: "350px", overflow: "hidden" }}
               >
                 <img
                   src={course?.backgroundImg}
                   alt={course?.courseName}
                   className="mycourse-course-image"
+                  style={{ height: "200px" }}
                 />
                 {/* <div className="mycourse-course-header">
                   <span>
@@ -299,8 +301,9 @@ const MyCourse = () => {
                     <i className="fas fa-clock"></i> {course.duration}
                   </span>
                 </div> */}
-                <h3>{course?.courseName}</h3>
-                <p>{course?.description}</p>
+                <h3 style={{ fontSize: "1.5em", fontWeight: 600 }}>
+                  {course?.courseName}
+                </h3>
               </div>
             ))}
           </div>

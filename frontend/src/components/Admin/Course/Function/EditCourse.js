@@ -101,6 +101,8 @@ const EditCourse = ({ isAdmin }) => {
   const [dataCourse, setDataCourse] = useState();
   const [listTeacher, setListTeacher] = useState([]);
   const [teacher, setTeacher] = useState();
+  const [instructorPage, setInstructorPage] = useState(1);
+  const instructorsPerPage = 5;
 
   useEffect(() => {
     getAllTeacher();
@@ -153,7 +155,7 @@ const EditCourse = ({ isAdmin }) => {
           litCourse?.backgroundImg.split("/").pop()
         );
         setCoverImage(parts);
-        setObjectives(litCourse?.learningOutcome.split(","))
+        setObjectives(litCourse?.learningOutcome.split(","));
       } else {
         toast.error(response?.data?.body?.message || "Lỗi không xác định");
       }
@@ -453,6 +455,18 @@ const EditCourse = ({ isAdmin }) => {
     setShowInstructorModal(true);
   };
 
+  const totalInstructorPages = Math.ceil(
+    filteredInstructors.length / instructorsPerPage
+  );
+  const currentInstructors = filteredInstructors.slice(
+    (instructorPage - 1) * instructorsPerPage,
+    instructorPage * instructorsPerPage
+  );
+
+  const handleInstructorPageChange = (page) => {
+    setInstructorPage(page);
+  };
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="edit-course-details">
@@ -528,7 +542,7 @@ const EditCourse = ({ isAdmin }) => {
           <h2>
             Nội dung khóa học <span style={{ color: "red" }}>*</span>
           </h2>
-          <div
+          {/* <div
             className="add-new"
             onClick={() => {
               setDataCourse({
@@ -547,7 +561,7 @@ const EditCourse = ({ isAdmin }) => {
             }}
           >
             <i className="fas fa-plus"></i> <span>Thêm mới</span>
-          </div>
+          </div> */}
           {dataCourse?.lessons?.map((course, index) => (
             <div className="course-content" key={index}>
               <div className="input-group">
@@ -682,7 +696,7 @@ const EditCourse = ({ isAdmin }) => {
                 )}
               </div>
 
-              <div className="buttons">
+              {/* <div className="buttons">
                 <button
                   className="cancel-btn"
                   onClick={() => {
@@ -697,7 +711,7 @@ const EditCourse = ({ isAdmin }) => {
                 >
                   Xóa
                 </button>
-              </div>
+              </div> */}
             </div>
           ))}
         </div>
@@ -853,7 +867,7 @@ const EditCourse = ({ isAdmin }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredInstructors.map((instructor, index) => (
+                  {currentInstructors.map((instructor, index) => (
                     <tr key={instructor.id}>
                       <td>
                         <input
@@ -874,6 +888,29 @@ const EditCourse = ({ isAdmin }) => {
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div className="pagination-buttons">
+              <button
+                onClick={() => handleInstructorPageChange(1)}
+                disabled={instructorPage === 1}
+              >
+                «
+              </button>
+              {[...Array(totalInstructorPages).keys()].map((number) => (
+                <button
+                  key={number + 1}
+                  onClick={() => handleInstructorPageChange(number + 1)}
+                  className={instructorPage === number + 1 ? "active" : ""}
+                >
+                  {number + 1}
+                </button>
+              ))}
+              <button
+                onClick={() => handleInstructorPageChange(totalInstructorPages)}
+                disabled={instructorPage === totalInstructorPages}
+              >
+                »
+              </button>
             </div>
           </div>
         </Modala>

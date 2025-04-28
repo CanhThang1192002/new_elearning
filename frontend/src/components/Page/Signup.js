@@ -4,18 +4,18 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const Signup = () => {
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [name, setName] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState(null);
+  const [phone, setPhone] = useState(null);
+  const [name, setName] = useState(null);
+  const [password, setPassword] = useState(null);
+  const [confirmPassword, setConfirmPassword] = useState(null);
   const [role, setRole] = useState("Học viên");
   const [dob, setDob] = useState("");
   const [gender, setGender] = useState("Nam");
   const [address, setAddress] = useState("");
   const [selectedCertificates, setSelectedCertificates] = useState([]);
   const [experience, setExperience] = useState("");
-  const [userCode, setUserCode] = useState("");
+  const [userCode, setUserCode] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -31,7 +31,6 @@ const Signup = () => {
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [isCheckingPhone, setIsCheckingPhone] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
-  const [isValidate, setIsValisate] = useState(false);
 
   // Hàm lấy toàn bộ dữ liệu người dùng từ tất cả các trang
   const fetchAllUsers = async () => {
@@ -88,7 +87,7 @@ const Signup = () => {
 
   // Validation cho Tên đăng nhập
   useEffect(() => {
-    if (isValidate) {
+    if (userCode != null) {
       const trimmedUserCode = userCode.trim().toLowerCase();
 
       if (!trimmedUserCode) {
@@ -145,7 +144,7 @@ const Signup = () => {
 
   // Validation cho Địa chỉ email
   useEffect(() => {
-    if (isValidate) {
+    if (email !== null) {
       const trimmedEmail = email.trim().toLowerCase();
       if (!trimmedEmail) {
         setEmailError("Email là bắt buộc.");
@@ -192,7 +191,7 @@ const Signup = () => {
 
   // Validation cho Số điện thoại
   useEffect(() => {
-    if (isValidate) {
+    if (phone !== null) {
       const trimmedPhone = phone.trim();
       if (!trimmedPhone) {
         setPhoneError("Số điện thoại là bắt buộc.");
@@ -237,7 +236,7 @@ const Signup = () => {
 
   // Validation cho Họ và tên
   useEffect(() => {
-    if (isValidate) {
+    if (name !== null) {
       if (name) {
         const trimmedName = name.trim();
         if (!/^[a-zA-Z\sÀ-ỹ]+$/.test(trimmedName)) {
@@ -255,22 +254,30 @@ const Signup = () => {
 
   // Validation cho Mật khẩu
   useEffect(() => {
-    if (isValidate) {
+    if (password !== null) {
       const cleanedPassword = cleanString(password);
-      const cleanedConfirmPassword = cleanString(confirmPassword);
 
-      if (password && confirmPassword) {
-        if (cleanedPassword !== cleanedConfirmPassword) {
+      const strongPasswordRegex =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{12,}$/;
+
+      if (!cleanedPassword) {
+        setPasswordError("Mật khẩu là bắt buộc.");
+      } else if (!strongPasswordRegex.test(cleanedPassword)) {
+        setPasswordError(
+          "Mật khẩu không đủ mạnh. Mật khẩu phải có ít nhất 12 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt."
+        );
+      } else {
+        setPasswordError("");
+      }
+      if (confirmPassword !== null) {
+        const cleanedConfirmPassword = cleanString(confirmPassword);
+        if (!cleanedConfirmPassword) {
+          setPasswordError("Nhập lại mật khẩu là bắt buộc.");
+        } else if (cleanedPassword !== cleanedConfirmPassword) {
           setPasswordError("Mật khẩu xác nhận không khớp.");
         } else {
           setPasswordError("");
         }
-      } else if (!password) {
-        setPasswordError("Mật khẩu là bắt buộc.");
-      } else if (!confirmPassword) {
-        setPasswordError("Nhập lại mật khẩu là bắt buộc.");
-      } else {
-        setPasswordError("");
       }
     }
   }, [password, confirmPassword]);
@@ -436,7 +443,6 @@ const Signup = () => {
   };
 
   const handleSignup = async () => {
-    setIsValisate(true);
     if (!validateInputs()) return;
 
     if (isLoading) {
@@ -643,7 +649,11 @@ const Signup = () => {
       borderRadius: "4px",
       boxSizing: "border-box",
     },
-    signupFormPhone: { display: "flex", gap: "10px", minHeight: "48px" },
+    signupFormPhone: {
+      display: "flex",
+      gap: "10px",
+      minHeight: "48px",
+    },
     signupFormPassword: { position: "relative", flex: "1" },
     signupPasswordIcon: {
       position: "absolute",
@@ -652,13 +662,19 @@ const Signup = () => {
       transform: "translateY(-50%)",
       cursor: "pointer",
     },
-    signupFormRadioGroup: { display: "flex", gap: "10px" },
+    signupFormRadioGroup: {
+      display: "flex",
+      gap: "10px",
+      flexGrow: 1,
+    },
     signupFormRadio: { display: "flex", alignItems: "center" },
     signupFormExperience: {
       display: "flex",
       alignItems: "center",
       gap: "10px",
       marginBottom: "20px",
+      flexGrow: 1,
+      position: "relative",
     },
     signupFormFooter: {
       display: "flex",
@@ -681,6 +697,7 @@ const Signup = () => {
       alignItems: "center",
       flexWrap: "wrap",
       gap: "8px",
+      flexGrow: 1,
     },
     signupCertificateItem: {
       padding: "8px 16px",
@@ -861,8 +878,18 @@ const Signup = () => {
             <label htmlFor="phone" style={styles.signupFormLabel}>
               Số điện thoại <span style={{ color: "red" }}>*</span>:
             </label>
-            <div style={styles.signupFormPhone}>
-              <select id="phone-code" style={styles.signupFormSelect}>
+            <div
+              style={{
+                display: "flex",
+                flexGrow: 1,
+                gap: "10px",
+                minHeight: "48px",
+              }}
+            >
+              <select
+                id="phone-code"
+                style={{ ...styles.signupFormSelect, flex: 1 }}
+              >
                 <option value="+84">+84</option>
                 <option value="+1">+1</option>
                 <option value="+44">+44</option>
@@ -875,7 +902,7 @@ const Signup = () => {
               <input
                 type="text"
                 id="phone"
-                style={styles.signupFormInputPhone}
+                style={{ ...styles.signupFormInputPhone, flex: 3 }}
                 placeholder="Nhập số điện thoại"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -923,37 +950,34 @@ const Signup = () => {
             <label style={styles.signupFormLabel}>
               Quyền đăng ký <span style={{ color: "red" }}>*</span>:
             </label>
-            <div style={styles.signupFormRadioGroup}>
-              <label style={styles.signupFormRadio}>
+            <div style={{ display: "flex", gap: "10px", flexGrow: 1 }}>
+              <label style={{ ...styles.signupFormRadio, flex: 1 }}>
                 <input
                   type="radio"
                   name="role"
                   value="Học viên"
                   checked={role === "Học viên"}
                   onChange={handleRoleChange}
-                />{" "}
+                  style={{ width: "50px" }}
+                />
                 Học viên
               </label>
-              <label style={styles.signupFormRadio}>
+              <label style={{ ...styles.signupFormRadio, flex: 1 }}>
                 <input
                   type="radio"
                   name="role"
                   value="Giảng viên"
                   checked={role === "Giảng viên"}
                   onChange={handleRoleChange}
-                />{" "}
+                  style={{ width: "50px" }}
+                />
                 Giảng viên
               </label>
             </div>
           </div>
 
           {role === "Giảng viên" && (
-            <div
-              style={{
-                ...styles.signupFormGroup,
-                ...styles.signupConditionalField,
-              }}
-            >
+            <div style={styles.signupFormGroup}>
               <label htmlFor="experience" style={styles.signupFormLabel}>
                 Năm kinh nghiệm:
               </label>
@@ -971,7 +995,9 @@ const Signup = () => {
                     </option>
                   ))}
                 </select>
-                <span>(năm)</span>
+                <div style={{ position: "absolute", right: "25px" }}>
+                  <span>(năm)</span>
+                </div>
               </div>
             </div>
           )}
@@ -980,12 +1006,7 @@ const Signup = () => {
           )}
 
           {role === "Giảng viên" && (
-            <div
-              style={{
-                ...styles.signupFormGroup,
-                ...styles.signupConditionalField,
-              }}
-            >
+            <div style={styles.signupFormGroup}>
               <label htmlFor="certificate" style={styles.signupFormLabel}>
                 Chứng chỉ:
               </label>
@@ -1024,24 +1045,26 @@ const Signup = () => {
 
           <div style={styles.signupFormGroup}>
             <label style={styles.signupFormLabel}>Giới tính:</label>
-            <div style={styles.signupFormRadioGroup}>
-              <label style={styles.signupFormRadio}>
+            <div style={{ display: "flex", gap: "10px", flexGrow: 1 }}>
+              <label style={{ ...styles.signupFormRadio, flex: 1 }}>
                 <input
                   type="radio"
                   name="gender"
                   value="Nam"
                   checked={gender === "Nam"}
                   onChange={(e) => setGender(e.target.value)}
+                  style={{ width: "50px" }}
                 />{" "}
                 Nam
               </label>
-              <label style={styles.signupFormRadio}>
+              <label style={{ ...styles.signupFormRadio, flex: 1 }}>
                 <input
                   type="radio"
                   name="gender"
                   value="Nữ"
                   checked={gender === "Nữ"}
                   onChange={(e) => setGender(e.target.value)}
+                  style={{ width: "50px" }}
                 />{" "}
                 Nữ
               </label>

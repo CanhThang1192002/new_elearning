@@ -174,12 +174,17 @@ function Home({ search }) {
               }}
               key={index}
               className="homestudents-course-card-link"
+              style={{ height: "350px", overflow: "hidden" }}
             >
-              <div className="homestudents-course-card">
+              <div
+                className="homestudents-course-card"
+                style={{ height: "100%" }}
+              >
                 <img
                   src={course.backgroundImg}
                   alt={course.title}
                   className="homestudents-course-image"
+                  style={{ height: "200px" }}
                 />
                 <div className="homestudents-course-header">
                   <span>
@@ -189,8 +194,10 @@ function Home({ search }) {
                     <i className="fas fa-clock"></i> {course.duration}
                   </span>
                 </div>
-                <h3>{course.title}</h3>
-                <p>{course.description}</p>
+                <h3 style={{ fontSize: "1.5em", fontWeight: 600 }}>
+                  {course.courseName}
+                </h3>
+                {/* <p>{course.description}</p> */}
               </div>
             </div>
           ))}
