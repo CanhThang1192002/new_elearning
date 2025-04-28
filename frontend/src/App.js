@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   BrowserRouter as Router,
   Route,
@@ -69,6 +69,7 @@ const PrivateRoute = ({ children, allowedRoles }) => {
 
 // AppContent Component to Handle Layout and Footer Logic
 function AppContent() {
+  const [search, setSearch] = useState("");
   const location = useLocation();
   // Include /course/:courseId in footer paths
   const showFooterPaths = [
@@ -90,6 +91,10 @@ function AppContent() {
     window.location.href = "/login"; // Force redirect to login
   };
 
+  const handleSearch = (value) => {
+    setSearch(value);
+  };
+
   return (
     <div className="app-wrapper">
       <Routes>
@@ -105,8 +110,12 @@ function AppContent() {
             <div className="container">
               <Sidebar handleLogout={handleLogout} />
               <div className="content">
-                <Header title="Trang chủ" isSearch={true} />
-                <Home />
+                <Header
+                  title="Trang chủ"
+                  isSearch={true}
+                  handleSearch={handleSearch}
+                />
+                <Home search={search} />
               </div>
             </div>
           }

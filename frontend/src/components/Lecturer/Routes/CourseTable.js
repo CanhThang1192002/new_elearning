@@ -7,6 +7,7 @@ import axios from "axios";
 const CourseTable = () => {
   const [courses, setCourses] = useState([]);
   const [filteredCourses, setFilteredCourses] = useState([]);
+  const [totalItem, setTotalItem] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchCriteria, setSearchCriteria] = useState({
     courseName: "",
@@ -57,7 +58,7 @@ const CourseTable = () => {
     setCurrentPage(1);
   };
 
-  const totalPages = Math.ceil(filteredCourses.length / itemsPerPage);
+  const totalPages = Math.ceil(totalItem / itemsPerPage);
   const currentCourses = filteredCourses.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -95,6 +96,7 @@ const CourseTable = () => {
       });
       if (response?.data?.body?.errorStatus === 901) {
         setFilteredCourses(response.data.body.data);
+        setTotalItem(response.data.body.pagination.totalItems);
       } else {
         toast.error(
           response.data.body.message || "Có lỗi khi lấy danh sách kháo học"
@@ -118,7 +120,7 @@ const CourseTable = () => {
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
       getAllCourseOfTeacher();
-    }, 200); // Delay 200ms
+    }, 200);
     return () => clearTimeout(debounceTimer);
   }, [
     searchCriteria.courseName,
@@ -136,18 +138,17 @@ const CourseTable = () => {
       <div className="course-table-content">
         <div className="course-table-card">
           <div className="course-table-search-form">
-            <label htmlFor="courseName">
-              Khóa học
-              <input
-                type="text"
-                name="courseName"
-                placeholder="Tên khóa học"
-                value={searchCriteria.courseName}
-                onChange={handleSearchChange}
-                onKeyDown={handleKeyPress}
-              />
-            </label>
-            <label htmlFor="creationDate">
+            <label htmlFor="courseName">Khóa học</label>
+            <input
+              type="text"
+              name="courseName"
+              placeholder="Tên khóa học"
+              value={searchCriteria.courseName}
+              onChange={handleSearchChange}
+              onKeyDown={handleKeyPress}
+              style={{ width: "20%" }}
+            />
+            {/* <label htmlFor="creationDate">
               Ngày tạo
               <input
                 type="date"
@@ -155,7 +156,7 @@ const CourseTable = () => {
                 value={searchCriteria.creationDate}
                 onChange={handleSearchChange}
               />
-            </label>
+            </label> */}
           </div>
           <div className="course-table-action-buttons">
             <div>
@@ -169,10 +170,21 @@ const CourseTable = () => {
           </div>
           <div className="table-container">
             <table>
+              <colgroup>
+                <col style={{ width: "60px" }} /> {/* STT */}
+                <col style={{ width: "250px" }} /> {/* Tên khóa học */}
+                <col style={{ width: "250px" }} /> {/* Tên giảng viên */}
+                <col style={{ width: "100px" }} /> {/* Số bài học */}
+                <col style={{ width: "300px" }} /> {/* Mô tả */}
+                <col style={{ width: "150px" }} /> {/* Ngày bắt đầu */}
+                <col style={{ width: "100px" }} /> {/* Ngày kết thúc */}
+                {/* <col style={{ width: "150px" }} /> Trạng thái */}
+                <col style={{ width: "150px" }} /> {/* Tính năng */}
+              </colgroup>
               <thead>
                 <tr>
                   <th>STT</th>
-                  <th>Mã khóa học</th>
+                  {/* <th>Mã khóa học</th> */}
                   <th>Tên khóa học</th>
                   <th>Tên giảng viên</th>
                   <th>Số bài học</th>
@@ -183,10 +195,10 @@ const CourseTable = () => {
                 </tr>
               </thead>
               <tbody>
-                {currentCourses.map((course, index) => (
+                {filteredCourses.map((course, index) => (
                   <tr key={course.id}>
                     <td>{index + 1 + (currentPage - 1) * itemsPerPage}</td>
-                    <td>{course.id}</td>
+                    {/* <td>{course.id}</td> */}
                     <td>{course.courseName}</td>
                     <td>{course?.instructors[0]?.name || ""}</td>
                     <td>{course.lessonCount}</td>
@@ -204,7 +216,7 @@ const CourseTable = () => {
               </tbody>
             </table>
           </div>
-          {/* <div className="pagination-buttons">
+          <div className="pagination-buttons">
             <button onClick={() => handlePageChange(1)}>«</button>
             {[...Array(totalPages).keys()].map((number) => (
               <button
@@ -216,34 +228,6 @@ const CourseTable = () => {
               </button>
             ))}
             <button onClick={() => handlePageChange(totalPages)}>»</button>
-          </div> */}
-          <div className="pagination-buttons">
-            <button
-              onClick={() => handlePageChange(1)}
-              disabled={currentPage === 1}
-            >
-              «
-            </button>
-            {[...Array(totalPages).keys()].map((number) => (
-              <button
-                key={number + 1}
-                onClick={() => handlePageChange(number + 1)}
-                className={currentPage === number + 1 ? "active" : ""}
-              >
-                {number + 1}
-              </button>
-            ))}
-            <button
-              onClick={() => handlePageChange(totalPages)}
-              disabled={currentPage === totalPages}
-            >
-              »
-            </button>
-            <select value={itemsPerPage} onChange={handleItemsPerPageChange}>
-              <option value="5">5</option>
-              <option value="10">10</option>
-              <option value="20">20</option>
-            </select>
           </div>
         </div>
       </div>

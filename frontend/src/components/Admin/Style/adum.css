@@ -97,10 +97,18 @@
   cursor: pointer;
 }
 
-.btn-blue { background-color: #3b82f6; }
-.btn-green { background-color: #10b981; }
-.btn-red { background-color: #ef4444; }
-.btn-yellow { background-color: #f59e0b; }
+.btn-blue {
+  background-color: #3b82f6;
+}
+.btn-green {
+  background-color: #10b981;
+}
+.btn-red {
+  background-color: #ef4444;
+}
+.btn-yellow {
+  background-color: #f59e0b;
+}
 
 /* === TABLE === */
 .table-container {
@@ -261,7 +269,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  font-family: 'Roboto', Arial, sans-serif;
+  font-family: "Roboto", Arial, sans-serif;
 }
 
 /* Dấu sao đỏ cho các trường bắt buộc */
@@ -396,7 +404,7 @@
   border: 1px solid #d1d5db;
   border-radius: 0.25rem;
   font-size: 0.875rem;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   box-sizing: border-box;
 }
 

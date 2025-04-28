@@ -446,6 +446,18 @@ const CourseManagement = () => {
 
           <div className="table-container">
             <table>
+              <colgroup>
+                <col style={{ width: "50px" }} /> {/* Checkbox */}
+                <col style={{ width: "50px" }} /> {/* STT */}
+                <col style={{ width: "200px" }} /> {/* Tên khóa học */}
+                <col style={{ width: "200px" }} /> {/* Tên giảng viên */}
+                <col style={{ width: "80px" }} /> {/* Số bài học */}
+                <col style={{ width: "300px" }} /> {/* Mô tả */}
+                <col style={{ width: "90px" }} /> {/* Ngày bắt đầu */}
+                <col style={{ width: "90px" }} /> {/* Ngày kết thúc */}
+                <col style={{ width: "100px" }} /> {/* Trạng thái */}
+                <col style={{ width: "80px" }} /> {/* Tính năng */}
+              </colgroup>
               <thead>
                 <tr>
                   <th>
@@ -457,7 +469,7 @@ const CourseManagement = () => {
                     />
                   </th>
                   <th>STT</th>
-                  <th>Mã khóa học</th>
+                  {/* <th>Mã khóa học</th> */}
                   <th>Tên khóa học</th>
                   <th>Tên giảng viên</th>
                   <th>Số bài học</th>
@@ -480,7 +492,7 @@ const CourseManagement = () => {
                       />
                     </td>
                     <td>{index + 1 + (currentPage - 1) * itemsPerPage}</td>
-                    <td>{course.id}</td>
+                    {/* <td>{course.id}</td> */}
                     <td>{course.courseName}</td>
                     <td>{course.instructor}</td>
                     <td>{course.lessons}</td>

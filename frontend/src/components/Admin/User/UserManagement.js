@@ -88,7 +88,7 @@ const UserManagement = () => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+    return `${year}-${month}-${day}T00:00:00`;
   }, []);
 
   const fetchUsers = useCallback(
@@ -545,6 +545,22 @@ const UserManagement = () => {
 
           <div className="table-container">
             <table>
+              <colgroup>
+                <col width="40px" /> {/* Checkbox */}
+                <col width="40px" /> {/* STT */}
+                <col width="150px" /> {/* Mã định danh */}
+                <col width="200px" /> {/* Họ tên */}
+                <col width="200px" /> {/* Email */}
+                <col width="120px" /> {/* Số điện thoại */}
+                <col width="200px" /> {/* Địa chỉ */}
+                <col width="70px" /> {/* Giới tính */}
+                <col width="100px" /> {/* Ngày sinh */}
+                <col width="80px" /> {/* Vai trò */}
+                <col width="130px" /> {/* Trạng thái */}
+                <col width="110px" /> {/* Kinh nghiệm */}
+                <col width="200px" /> {/* Chứng chỉ */}
+                <col width="80px" /> {/* Tính năng */}
+              </colgroup>
               <thead>
                 <tr>
                   <th>
@@ -555,7 +571,7 @@ const UserManagement = () => {
                     />
                   </th>
                   <th>STT</th>
-                  <th>Mã</th>
+                  <th>Mã định danh</th>
                   <th>Họ và tên</th>
                   <th>Email</th>
                   <th>Số điện thoại</th>

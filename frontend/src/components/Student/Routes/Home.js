@@ -4,7 +4,7 @@ import "../Style/hocvien.css";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-function Home() {
+function Home({ search }) {
   const [courses, setCourses] = useState([]);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -12,6 +12,7 @@ function Home() {
   const coursesPerPage = 8;
   const bannerImages = ["/logo512.png", "/logo512.png", "/img/OIP (2).jpg"];
   const navigate = useNavigate();
+  const [total, setTotal] = useState(0);
 
   // Lấy token từ localStorage
   const token = localStorage.getItem("token");
@@ -24,14 +25,20 @@ function Home() {
 
     // Hàm gọi API để lấy danh sách khóa học
     const fetchCourses = async () => {
+      const params = new URLSearchParams({
+        courseName: search,
+      });
       try {
-        const response = await fetch("http://localhost:8081/v1/api/course", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await fetch(
+          `http://localhost:8081/v1/api/course?${params}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         if (!response.ok) {
           throw new Error("Lỗi khi tải dữ liệu khóa học");
@@ -41,7 +48,10 @@ function Home() {
         if (data.body.errorStatus === 901) {
           const originalData = data.body.data || [];
           const dataWithImages = await fetchAllImages(originalData);
+          console.log("dataWithImages", dataWithImages);
           setCourses(dataWithImages);
+          setTotal(data.body.pagination.totalItems);
+          setCurrentPage(1);
         } else {
           console.error("Lỗi từ API:", data.body.message);
         }
@@ -53,7 +63,7 @@ function Home() {
     };
 
     fetchCourses();
-  }, [token]);
+  }, [token, search]);
 
   useEffect(() => {
     const interval = setInterval(() => {

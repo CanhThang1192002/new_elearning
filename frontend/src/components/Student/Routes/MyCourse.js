@@ -235,7 +235,7 @@ const MyCourse = () => {
     }
   };
 
-  const coursesPerPage = 4;
+  const coursesPerPage = 8;
 
   // Tính số trang tối đa dựa trên danh sách có nhiều khóa học nhất
   const totalPages = Math.max(
